@@ -94,43 +94,27 @@ then
     exit
 fi
 
-echo "All working"
-exit
+## Split data to segment for regions of interest and write Z files
+
+if [ -z $extract ]
+then
 
 
+else
 
-### Split to segment for regions of interest and write Z files
+    ## TO DO - Sort issue with chr < 10 being 01,02 etc. (as below) and chr > 9 being 10,11,12 etc.
+    
+    cat <(echo "SNPID rsid chromosome position A1 A2") \
+    <(LANG=C fgrep -wf $extract \
+    <($bgenpath/bin/bgenix \
+    -g $input.bgen \
+    -i $input.bgi \
+    -incl-range 0${chromosome}:${start}-${end} -list) | \
+    awk '{print $1, $2, $3, $4, $6, $7}') > ${input}_chr${chr}_${start}_${end}.incl.list
 
-module add utilities/use.dev
-module add apps/qctool/2.0.8
+    ## YOU ARE HERE
 
-bunzip2 /scratch/groups/ukbiobank/usr/KCL_Data_Analyses/MDD_BIP/MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT.bz2
-
-for chr in 1 5 14 18
-do
-    declare -i start
-    declare -i end
-    if [ $chr -eq 1 ]
-    then
-        for start in 71000001 72000001 73000001
-	do
-            end=$start+3000000
-
-            LANG=C fgrep -wf daner_MDD29_noPharma_UKBB_SNPs.txt /scratch/groups/ukbiobank/usr/KCL_Data_Analyses/MDD_BIP/MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT | \
-	    awk -v chr=$chr -v start=$start -v end=$end '$1 == chr && $3 >= start && $3 <= end {print $2}' \
-	    > MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.snps
-
-            wc -l MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.snps
-	    sort MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.snps | uniq | wc -l
-
-            cat <(echo "SNPID rsid chromosome position A1 A2") \
-            <(LANG=C fgrep -wf MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.snps \
-            <(/scratch/groups/ukbiobank/Edinburgh_Data/Software/bgen_tools/bin/bgenix \
-            -g ukb_imp_chr${chr}_v3_MAF1_INFO4.bgen \
-            -i ukb_imp_chr${chr}_v3_MAF1_INFO4.bgen.bgi \
-            -incl-range 0${chr}:${start}-${end} -list) | \
-	    awk '{print $1, $2, $3, $4, $6, $7}') > MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.incl.list
-
+    
 	    awk -v chr=$chr '{print $1, $2, $3, $4, $5, $6, $1, $2, chr, $4, $5, $6}' MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.incl.list \
 	    > MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.remap
 
