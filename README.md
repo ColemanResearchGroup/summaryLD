@@ -18,7 +18,7 @@ This code was developed in a Linux environment (4.19.0-19-amd64) - it should run
 
 ## Installation
 
-LDStore2 - Mandatory
+###LDStore2 - Mandatory
 
 ```
 
@@ -27,7 +27,7 @@ tar xzvf ldstore_v2.0_x86_64.tgz
 
 ```
 
-PLINK1.9 - Optional
+###PLINK1.9 - Optional
 
 ```
 
@@ -36,7 +36,7 @@ unzip plink_linux_x86_64_20220305.zip
 
 ```
 
-BGEN tools - Optional
+###BGEN tools - Optional
 
 Code below from [BGEN website](https://enkre.net/cgi-bin/code/bgen)
 
@@ -54,7 +54,7 @@ cd bgen
 
 ```
 
-qctool2 - Optional
+###qctool2 - Optional
 
 ```
 
@@ -111,30 +111,30 @@ GenerateLDStore.bash \
 
 All flags possible and required for the pipeline are listed below. Note the "--" flags and the necessity for arguments to be attached to flags with "="
 
-  --input
-      - Prefix of the input file
-      - Hard-called imputed data is recommended to maximise coverage
-      - Ensure that the same genome build is being used across cohorts (otherwise start and end below will be inconsistent across cohorts)
-  --chromosome
-      - Chromosome of the region to be included in the LD matrix
-  --start
-      - Leftmost base position of the region to be included in the LD matrix (inclusive)
-  --end
-      - Rightmost base position of the region to be included in the LD matrix (inclusive)
-  --extract
-      - List of SNPs to be included in the LD matrix, one SNP per line, no header. Can be left out if no SNP filter is required
-  --keep
-      - List of individuals to be used when calculating the LD matrix, one set of individual IDs per line (as FID IID, space-delimited), no header. Can be left out if no individual filter is required
-  --output
-      - Prefix of output file names
-  --inputtype
-     - Type of input file - must be "plink" or "bgen"
-  --ldstorepath
-     - Full path to LDStore v2 binary
-  --plinkpath
-    - Full path to PLINK1.9 binary. Can be left out if type=bgen 
-  --bgenpath
-  --qctoolpath
-    - Full paths to bgen tools folder and to qctool2 binary. Can be left out if type=plink
+    --input
+        - Prefix of the input file
+        - Hard-called imputed data is recommended to maximise coverage
+        - Ensure that the same genome build is being used across cohorts (otherwise start and end below will be inconsistent across cohorts)
+    --chromosome
+        - Chromosome of the region to be included in the LD matrix
+    --start
+        - Leftmost base position of the region to be included in the LD matrix (inclusive)
+    --end
+        - Rightmost base position of the region to be included in the LD matrix (inclusive)
+    --extract
+        - List of SNPs to be included in the LD matrix, one SNP per line, no header. Can be left out if no SNP filter is required
+    --keep
+        - List of individuals to be used when calculating the LD matrix, one set of individual IDs per line (as FID IID, space-delimited), no header. Can be left out if no individual filter is required
+    --output
+        - Prefix of output file names
+    --inputtype
+       - Type of input file - must be "plink" or "bgen"
+    --ldstorepath
+       - Full path to LDStore v2 binary
+    --plinkpath
+      - Full path to PLINK1.9 binary. Can be left out if type=bgen 
+    --bgenpath
+    --qctoolpath
+      - Full paths to bgen tools folder and to qctool2 binary. Can be left out if type=plink
 
 ## Output
