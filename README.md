@@ -18,7 +18,7 @@ This code was developed in a Linux environment (4.19.0-19-amd64) - it should run
 
 ## Installation
 
-###LDStore2 - Mandatory
+### LDStore2 - Mandatory
 
 ```
 
@@ -27,7 +27,7 @@ tar xzvf ldstore_v2.0_x86_64.tgz
 
 ```
 
-###PLINK1.9 - Optional
+### PLINK1.9 - Optional
 
 ```
 
@@ -36,7 +36,7 @@ unzip plink_linux_x86_64_20220305.zip
 
 ```
 
-###BGEN tools - Optional
+### BGEN tools - Optional
 
 Code below from [BGEN website](https://enkre.net/cgi-bin/code/bgen)
 
@@ -54,7 +54,7 @@ cd bgen
 
 ```
 
-###qctool2 - Optional
+### qctool2 - Optional
 
 ```
 
@@ -109,7 +109,8 @@ GenerateLDStore.bash \
 
 ## Pipeline explained
 
-All flags possible and required for the pipeline are listed below. Note the "--" flags and the necessity for arguments to be attached to flags with "="
+All flags possible and required for the pipeline are listed below.
+Note the "--" flags and the necessity for arguments to be attached to flags with "="
 
     --input
         - Prefix of the input file
