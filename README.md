@@ -113,6 +113,7 @@ GenerateLDStore.bash \
 ## Pipeline explained
 
 All flags possible and required for the pipeline are listed below.
+
 Note the "--" flags and the necessity for arguments to be attached to flags with "="
 
     --input
@@ -152,9 +153,9 @@ Note the "--" flags and the necessity for arguments to be attached to flags with
         - N of samples to include in the LD matrix
         - Should be NCase + NControl for a binary phenotype (i.e. not NEff)
     --output
-	- MANDATORY
-        - Prefix of output file names
-        - Will overwrite any files with same names (see (Output)[#output] below)!
+        - MANDATORY
+        - Prefix of output file
+        - Will overwrite any .bcor file with the same name!
     --inputtype
         - MANDATORY
         - Type of input file - must be "plink" or "bgen"
