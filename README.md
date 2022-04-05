@@ -140,21 +140,21 @@ Note the "--" flags and the necessity for arguments to be attached to flags with
         - MANDATORY
         - Rightmost base position of the region to be included in the LD matrix (inclusive)
     --extract
-	- OPTIONAL
+        - OPTIONAL
         - List of SNPs to be included in the LD matrix, one SNP per line, no header.
     --keep
         - OPTIONAL
         - List of individuals to be used when calculating the LD matrix.
-	- PLINK: Should be in PLINK --keep format if included.
-	- bgen: Should be a list of samples, one sample per line, no header. Samples should be identified by ID_1 from the .sample file. 
+        - PLINK: Should be in PLINK --keep format if included.
+        - bgen: Should be a list of samples, one sample per line, no header. Samples should be identified by ID_1 from the .sample file. 
     --samplen
         - MANDATORY
-	- N of samples to include in the LD matrix
-	- Should be NCase + NControl for a binary phenotype (i.e. not NEff)
+        - N of samples to include in the LD matrix
+        - Should be NCase + NControl for a binary phenotype (i.e. not NEff)
     --output
 	- MANDATORY
         - Prefix of output file names
-	- Will overwrite any files with same names (see [Output](#output) below)!
+        - Will overwrite any files with same names (see (Output)[#output] below)!
     --inputtype
         - MANDATORY
         - Type of input file - must be "plink" or "bgen"
@@ -162,11 +162,11 @@ Note the "--" flags and the necessity for arguments to be attached to flags with
         - MANDATORY
         - Full path to LDStore v2 binary
     --plinkpath
-	- PLINK MANDATORY
+        - PLINK MANDATORY
         - Full path to PLINK1.9 binary. Can be left out if type=bgen 
     --bgenpath
     --qctoolpath
-	- bgen MANDATORY
+        - bgen MANDATORY
         - Full paths to bgen tools folder and to qctool2 binary. Can be left out if type=plink
 
 ## Output
