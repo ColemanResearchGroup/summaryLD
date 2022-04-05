@@ -227,6 +227,13 @@ then
 
     echo -e "\nInput is bgen"
 
+    if [ -z ${inputbgen+x} ]
+    then
+	inputbgen=$input.bgen
+	inputbgi=$input.bgi
+	inputsample=$input.sample
+    fi
+    
     ## Split data to segment for regions of interest and write Z files
 
     # Give chromosome leading 0 for segment extraction
@@ -243,8 +250,8 @@ then
     echo -e "\nSplitting to " $chromosome":"$start"-"$end
 
     $bgenpath/bin/bgenix \
-	-g $input.bgen \
-	-i $input.bgi \
+	-g $inputbgen \
+	-i $inputbgi \
 	-incl-range ${rangechromosome}:${start}-${end} > ${input}_chr${chr}_${start}_${end}_TEMP.bgen
 
     if [ -z ${extract+x} ]
@@ -254,8 +261,8 @@ then
 
 	cat <(echo "SNPID rsid rangechromosome position A1 A2 SNPID rsid chromosome position A1 A2") \
 	    <($bgenpath/bin/bgenix \
-		  -g $input.bgen \
-		  -i $input.bgi \
+		  -g $inputbgen \
+		  -i $inputbgi \
 		  -incl-range ${rangechromosome}:${start}-${end} -list | \
 		  awk -v chromosome=$chromosome '{print $1, $2, $3, $4, $6, $7, $1, $2, chromosome, $4, $6, $7}') \
 	    > ${input}_chr${chr}_${start}_${end}.incl.list
@@ -269,8 +276,8 @@ then
 	cat <(echo "SNPID rsid rangechromosome position A1 A2 SNPID rsid chromosome position A1 A2") \
 	    <(LANG=C fgrep -wf $extract \
 		  <($bgenpath/bin/bgenix \
-			-g $input.bgen \
-			-i $input.bgi \
+			-g $inputbgen \
+			-i $inputbgi \
 			-incl-range ${rangechromosome}:${start}-${end} -list) | \
 		  awk -v chromosome=$chromosome '{print $1, $2, $3, $4, $6, $7, $1, $2, chromosome, $4, $6, $7}') \
 	    > ${input}_chr${chr}_${start}_${end}.incl.list
@@ -281,7 +288,7 @@ then
 		 -g ${input}_chr${chr}_${start}_${end}_TEMP.bgen \
 		 -map-id-data ${input}_chr${chr}_${start}_${end}.incl.list \
 		 -incl-variants <(awk '{print $1, $2, $3, $4, $5, $6}' ${input}_chr${chr}_${start}_${end}.incl.list) \
-		 -s ${input}.sample
+		 -s $inputsample
 
     if [ -z ${keep+x} ]
     then
@@ -315,10 +322,10 @@ then
     if [ -z ${master+x} ]
     then
 	cat <(echo "z;bgen;bgi;bcor;ld;n_samples;sample") \
-	    <(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;${input}.sample") >  $masterroot.master
+	    <(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;$inputsample") >  $masterroot.master
     else
 	cat <(echo "z;bgen;bgi;bcor;ld;n_samples;sample;incl") \
-	    <(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;${input}.sample;$keep") >  $masterroot.master
+	    <(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;$inputsample;$keep") >  $masterroot.master
     fi
 
     ## Write bcor
