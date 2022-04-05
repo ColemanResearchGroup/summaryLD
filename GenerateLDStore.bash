@@ -90,8 +90,7 @@ Note the '--' flags and the necessity for arguments to be attached to flags with
     --keep
         - OPTIONAL
         - List of individuals to be used when calculating the LD matrix.
-	- PLINK: Should be in PLINK --keep format if included.
-	- bgen: Should be a list of samples, one sample per line, no header. Samples should be identified by ID_1 from the .sample file.
+	- Should be a list of samples, one sample per line, no header. Samples should be identified by ID_1 from the .sample file (FID from the .fam file)
     --samplen
         - MANDATORY
 	- N of samples to include in the LD matrix
@@ -110,11 +109,11 @@ Note the '--' flags and the necessity for arguments to be attached to flags with
         - MANDATORY
         - Full path to LDStore v2 binary
     --plinkpath
-	- PLINK MANDATORY
-        - Full path to PLINK1.9 binary. Can be left out if type=bgen
+	- PLINK MANDATORY // bgen OPTIONAL
+        - Full path to PLINK2 binary.
     --bgenpath
     --qctoolpath
-	- bgen MANDATORY
+	- MANDATORY
         - Full paths to bgen tools folder and to qctool2 binary. Can be left out if type=plink
 "
     exit
@@ -220,6 +219,24 @@ then
 
     echo -e "\nInput is PLINK"
 
+    if [ -z ${inputbed+x} ]
+    then
+        inputbed=$input.bed
+        inputbim=$input.bim
+        inputfam=$input.fam
+    fi
+
+    $plinkpath/plink2 \
+        --bed $inputbed \
+        --bim $inputbim \
+        --fam $inputfam \
+        --export bgen-1.2 \
+        --threads $threads \
+        --out $output
+
+    inputbgen=$output.bgen
+    inputbgi=$output.bgi
+    inputsample=$output.sample
 
 fi
 
@@ -236,6 +253,8 @@ then
 	inputbgi=$input.bgi
 	inputsample=$input.sample
     fi
+fi
+
     
     ## Split data to segment for regions of interest and write Z files
 

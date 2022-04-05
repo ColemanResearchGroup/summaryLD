@@ -1,0 +1,19 @@
+PLINK v2.00a2LM 64-bit Intel (6 Oct 2019)
+Options in effect:
+  --make-bed
+  --out ukb_imp_chr9_v3_MAF1_INFO4
+  --pgen /scratch/datasets/ukbiobank/June2017/Imputed/ukb_imp_chr9_v3_MAF1_INFO4.pgen
+  --psam ukb18177_glanville_temp.fam
+  --pvar /scratch/datasets/ukbiobank/June2017/Imputed/ukb_imp_chr9_v3_MAF1_INFO4.pvar
+  --threads 19
+
+Hostname: nodeb09.pri.rosalind2.alces.network
+Working directory: /mnt/lustre/users/k1204688/Lecturer/MDD_Finemapping/summaryLD
+Start time: Tue Apr  5 14:29:32 2022
+
+Random number seed: 1649165372
+193058 MiB RAM detected; reserving 96529 MiB for main workspace.
+Using up to 19 threads (change this with --threads).
+Error: Failed to open ukb18177_glanville_temp.fam : No such file or directory.
+
+End time: Tue Apr  5 14:29:32 2022

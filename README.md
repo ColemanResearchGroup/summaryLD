@@ -10,9 +10,9 @@ This repository provides code and instructions to generate summary LDStore2 file
 
 ## Dependencies and Installation
 
-This code requires [LDStore2](http://www.christianbenner.com/#).
-Depending on the nature of the input files, it may also require [PLINK1.9](https://www.cog-genomics.org/plink/) or the [BGEN tools suite](https://enkre.net/cgi-bin/code/bgen) (including [qctool2](https://www.well.ox.ac.uk/~gav/qctool/)).
-Support for additional input files can be requested.
+This code requires [LDStore2](http://www.christianbenner.com/#), the [BGEN tools suite](https://enkre.net/cgi-bin/code/bgen), and [qctool2](https://www.well.ox.ac.uk/~gav/qctool/).
+Depending on the nature of the input files, it may also require [PLINK2](https://www.cog-genomics.org/plink/2.0).
+Support for additional input files can be requested - at present, only PLINK binaries and bgen1.2 input file types are supported.
 
 This code was developed in a Linux environment (4.19.0-19-amd64) - it should run in other POSIX environments, but has not as yet been widely tested.
 
@@ -27,16 +27,7 @@ tar xzvf ldstore_v2.0_x86_64.tgz
 
 ```
 
-### PLINK1.9 - Optional
-
-```
-
-wget https://s3.amazonaws.com/plink1-assets/plink_linux_x86_64_20220305.zip
-unzip plink_linux_x86_64_20220305.zip
-
-```
-
-### BGEN tools - Optional
+### BGEN tools - Mandatory
 
 Code below from [BGEN website](https://enkre.net/cgi-bin/code/bgen)
 
@@ -54,7 +45,7 @@ cd bgen
 
 ```
 
-### qctool2 - Optional
+### qctool2 - Mandatory
 
 ```
 
@@ -63,6 +54,14 @@ tar xvfz qctool_v2.2.0-CentOS_Linux7.8.2003-x86_64.tgz
 
 ```
 
+### PLINK2 - Optional
+
+```
+
+wget https://s3.amazonaws.com/plink2-assets/alpha2/plink2_linux_x86_64.zip
+unzip plink2_linux_x86_64.zip
+
+```
 
 ## Running the pipeline
 
@@ -75,6 +74,7 @@ To generate LDStore files, run:
 # Limiting to individuals - Indivs.txt
 # Extracting LD for chromosome 1, positions 1-3000000
 # 10000 individuals in Indivs.txt
+# Running LDStore2 on 4 threads
 
 bash \
 GenerateLDStore.bash \
@@ -85,12 +85,15 @@ GenerateLDStore.bash \
 --extract=SNPs.txt \
 --keep=Indivs.txt \
 --samplen=10000 \
+--threads=2 \
 --output=OutputName \
 --inputtype=plink \
 --ldstorepath=path/to/ldstore_v2.0_x86_64 \
---plinkpath=/path/to/plink
+--plinkpath=/path/to/plink \
+--bgenpath /path/to/bgen_tools \
+--qctoolpath /path/to/qctool
 
-# For BGen input - Input.{bgen,bgi,sample}
+# For BGen1.2 input - Input.{bgen,bgi,sample}
 # Other options as above
 
 bash \
@@ -102,6 +105,7 @@ GenerateLDStore.bash \
 --extract=SNPs.txt \
 --keep=Indivs.txt \
 --samplen=10000 \
+--threads=2 \
 --output=OutputName \
 --inputtype=bgen \
 --ldstorepath=path/to/ldstore_v2.0_x86_64 \
@@ -146,8 +150,7 @@ Note the "--" flags and the necessity for arguments to be attached to flags with
     --keep
         - OPTIONAL
         - List of individuals to be used when calculating the LD matrix.
-        - PLINK: Should be in PLINK --keep format if included.
-        - bgen: Should be a list of samples, one sample per line, no header. Samples should be identified by ID_1 from the .sample file. 
+        - Should be a list of samples, one sample per line, no header. Samples should be identified by ID_1 from the .sample file (FID from the .fam file)  
     --samplen
         - MANDATORY
         - N of samples to include in the LD matrix
@@ -170,11 +173,11 @@ Note the "--" flags and the necessity for arguments to be attached to flags with
         - Full path to PLINK1.9 binary. Can be left out if type=bgen 
     --bgenpath
     --qctoolpath
-        - bgen MANDATORY
+        - MANDATORY
         - Full paths to bgen tools folder and to qctool2 binary. Can be left out if type=plink
 
 ## Output
 
-    - ${input}_chr${chr}_${start}_${end}.bcor
+    - ${input}_chr${chromosome}_${start}_${end}.bcor
         - Summary correlation matrix for the segment
 
