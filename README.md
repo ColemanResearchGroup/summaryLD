@@ -152,6 +152,9 @@ Note the "--" flags and the necessity for arguments to be attached to flags with
         - MANDATORY
         - N of samples to include in the LD matrix
         - Should be NCase + NControl for a binary phenotype (i.e. not NEff)
+    --threads
+        - OPTIONAL
+        - Set number of threads for ldstore to use (defaults to 1)
     --output
         - MANDATORY
         - Prefix of output file

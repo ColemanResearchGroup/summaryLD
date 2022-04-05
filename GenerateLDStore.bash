@@ -65,8 +65,8 @@ Note the '--' flags and the necessity for arguments to be attached to flags with
         - Prefix of the input file
         - Hard-called imputed data is recommended to maximise coverage
         - Ensure that the same genome build is being used across cohorts (otherwise start and end below will be inconsistent across cohorts)
-	 - PLINK: Format should be PLINK binary (i.e. input.{bed,bim,fam})
-	 - bgen: Format should be bgen, index and .sample file (i.e. input.{bgen,bgi,sample})
+	- PLINK: Format should be PLINK binary (i.e. input.{bed,bim,fam})
+	- bgen: Format should be bgen, index and .sample file (i.e. input.{bgen,bgi,sample})
     --inputbed
     --inputbim
     --inputfam
@@ -74,32 +74,35 @@ Note the '--' flags and the necessity for arguments to be attached to flags with
     --inputbgi
     --inputsample
         - OPTIONAL
-	 - As --input above, but separate files
+	- As --input above, but separate files
     --chromosome
         - MANDATORY
         - Chromosome of the region to be included in the LD matrix
     --start
-	 - MANDATORY
+	- MANDATORY
         - Leftmost base position of the region to be included in the LD matrix (inclusive)
     --end
-	 - MANDATORY
+	- MANDATORY
         - Rightmost base position of the region to be included in the LD matrix (inclusive)
     --extract
-	 - OPTIONAL
+	- OPTIONAL
         - List of SNPs to be included in the LD matrix, one SNP per line, no header.
     --keep
         - OPTIONAL
         - List of individuals to be used when calculating the LD matrix.
-	 - PLINK: Should be in PLINK --keep format if included.
-	 - bgen: Should be a list of samples, one sample per line, no header. Samples should be identified by ID_1 from the .sample file.
+	- PLINK: Should be in PLINK --keep format if included.
+	- bgen: Should be a list of samples, one sample per line, no header. Samples should be identified by ID_1 from the .sample file.
     --samplen
         - MANDATORY
-	 - N of samples to include in the LD matrix
-	 - Should be NCase + NControl for a binary phenotype (i.e. not NEff)
+	- N of samples to include in the LD matrix
+	- Should be NCase + NControl for a binary phenotype (i.e. not NEff)
+    --threads
+        - OPTIONAL
+        - Set number of threads for ldstore to use (defaults to 1)
     --output
-	 - MANDATORY
+	- MANDATORY
         - Prefix of output file names
-	 - Will overwrite any files with same names (see [Output](#output) below)!
+	- Will overwrite any files with same names (see [Output](#output) below)!
     --inputtype
         - MANDATORY
         - Type of input file - must be 'plink' or 'bgen'
@@ -107,11 +110,11 @@ Note the '--' flags and the necessity for arguments to be attached to flags with
         - MANDATORY
         - Full path to LDStore v2 binary
     --plinkpath
-	 - PLINK MANDATORY
+	- PLINK MANDATORY
         - Full path to PLINK1.9 binary. Can be left out if type=bgen
     --bgenpath
     --qctoolpath
-	 - bgen MANDATORY
+	- bgen MANDATORY
         - Full paths to bgen tools folder and to qctool2 binary. Can be left out if type=plink
 "
     exit
@@ -212,7 +215,7 @@ fi
 
 ## Input is PLINK
 
-if [ $inputtype -eq "plink" ]
+if [ $inputtype == "plink" ]
 then
 
     echo -e "\nInput is PLINK"
@@ -222,7 +225,7 @@ fi
 
 ## Input is bgen
 
-if [ $inputtype -eq "bgen" ]
+if [ $inputtype == "bgen" ]
 then
 
     echo -e "\nInput is bgen"
@@ -247,79 +250,82 @@ then
 
     # Split to segment
 
-    echo -e "\nSplitting to " $chromosome":"$start"-"$end
+    echo -e "\nSplitting to "$chromosome":"$start"-"$end
 
     $bgenpath/bin/bgenix \
 	-g $inputbgen \
 	-i $inputbgi \
-	-incl-range ${rangechromosome}:${start}-${end} > ${input}_chr${chr}_${start}_${end}_TEMP.bgen
+	-incl-range ${rangechromosome}:${start}-${end} > ${output}_chr${chromosome}_${start}_${end}_TEMP.bgen
 
     if [ -z ${extract+x} ]
     then
 
         # Get SNPs in segment
 
-	cat <(echo "SNPID rsid rangechromosome position A1 A2 SNPID rsid chromosome position A1 A2") \
+	cat <(echo "SNPID rsid chromosome position A1 A2 SNPID rsid chromosome position A1 A2") \
 	    <($bgenpath/bin/bgenix \
 		  -g $inputbgen \
 		  -i $inputbgi \
 		  -incl-range ${rangechromosome}:${start}-${end} -list | \
 		  awk -v chromosome=$chromosome '{print $1, $2, $3, $4, $6, $7, $1, $2, chromosome, $4, $6, $7}') \
-	    > ${input}_chr${chr}_${start}_${end}.incl.list
+	    > ${output}_chr${chromosome}_${start}_${end}.remap
 
     else
 
-	echo -e "\nExtracting SNPs from " $extract
+	echo -e "\nExtracting SNPs from" $extract
 
 	# Filter segment for SNPs in extract list
 
-	cat <(echo "SNPID rsid rangechromosome position A1 A2 SNPID rsid chromosome position A1 A2") \
+	cat <(echo "SNPID rsid chromosome position A1 A2 SNPID rsid chromosome position A1 A2") \
 	    <(LANG=C fgrep -wf $extract \
 		  <($bgenpath/bin/bgenix \
 			-g $inputbgen \
 			-i $inputbgi \
 			-incl-range ${rangechromosome}:${start}-${end} -list) | \
 		  awk -v chromosome=$chromosome '{print $1, $2, $3, $4, $6, $7, $1, $2, chromosome, $4, $6, $7}') \
-	    > ${input}_chr${chr}_${start}_${end}.incl.list
+	    > ${output}_chr${chromosome}_${start}_${end}.remap
 
     fi
 
-    qctoolcommand=$qctoolpath/qctool \
-		 -g ${input}_chr${chr}_${start}_${end}_TEMP.bgen \
-		 -map-id-data ${input}_chr${chr}_${start}_${end}.incl.list \
-		 -incl-variants <(awk '{print $1, $2, $3, $4, $5, $6}' ${input}_chr${chr}_${start}_${end}.incl.list) \
-		 -s $inputsample
+    awk '{print $1, $2, $3, $4, $5, $6}' ${output}_chr${chromosome}_${start}_${end}.remap \
+        > ${output}_chr${chromosome}_${start}_${end}.incl.snps
+
+    qctoolcommand=$(echo $qctoolpath/qctool \
+                      -g ${output}_chr${chromosome}_${start}_${end}_TEMP.bgen \
+                      -map-id-data ${output}_chr${chromosome}_${start}_${end}.remap \
+                      -incl-variants ${output}_chr${chromosome}_${start}_${end}.incl.snps \
+                      -s $inputsample)
 
     if [ -z ${keep+x} ]
     then
-	qctoolcommand=$(echo $qctoolcommand " -og " ${input}_chr${chr}_${start}_${end}.bgen)
+	qctoolcommand=$(echo $qctoolcommand " -og " ${output}_chr${chromosome}_${start}_${end}.bgen)
 	$qctoolcommand
     else
-	qctoolcommand=$(echo $qctoolcommand " -incl-samples " $keep " -og " ${input}_chr${chr}_${start}_${end}.bgen)
+	qctoolcommand=$(echo $qctoolcommand " -incl-samples " $keep " -og " ${output}_chr${chromosome}_${start}_${end}.bgen)
 	$qctoolcommand
     fi
 
     ## Clean up temporary bgen
 
-    rm ${input}_chr${chr}_${start}_${end}_TEMP.bgen
+#    rm ${output}_chr${chromosome}_${start}_${end}_TEMP.bgen
 
     ## Index bgen
 
     $bgenpath/bin/bgenix \
-	-g ${input}_chr${chr}_${start}_${end}.bgen \
+	-g ${output}_chr${chromosome}_${start}_${end}.bgen \
 	-index
 
     ## Write Z files
 
-    awk '{print $2, $3, $4, $5, $6}' ${input}_chr${chr}_${start}_${end}.incl.list | \
+    awk '{print $2, $3, $4, $5, $6}' ${output}_chr${chromosome}_${start}_${end}.remap | \
 	sed -e 's/A1/allele1/g' -e 's/A2/allele2/g' -e 's/ '$rangechromosome' / '$chromosome' /g' \
-	    > ${input}_chr${chr}_${start}_${end}.z
+	    > ${output}_chr${chromosome}_${start}_${end}.z
 
     ## Write master files
 
-    masterroot=$(echo ${input}"_chr"${chr}"_"${start}"_"${end})
+    masterroot=$(echo ${output}"_chr"${chromosome}"_"${start}"_"${end})
 
-    if [ -z ${master+x} ]
+    if [ -z ${keep+x} ]
     then
 	cat <(echo "z;bgen;bgi;bcor;ld;n_samples;sample") \
 	    <(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;$inputsample") >  $masterroot.master
@@ -339,6 +345,6 @@ then
 
     ## Clean up
 
-    rm $masterroot.master ${masterroot}.z ${masterroot}.bgen ${masterroot}.bgen.bgi ${masterroot}.incl.list
+#    rm $masterroot.master ${masterroot}.z ${masterroot}.bgen ${masterroot}.bgen.bgi ${masterroot}.remap ${masterroot}.incl.snps
 
 fi
