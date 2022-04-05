@@ -120,8 +120,8 @@ Note the "--" flags and the necessity for arguments to be attached to flags with
         - Prefix of the input file
         - Hard-called imputed data is recommended to maximise coverage
         - Ensure that the same genome build is being used across cohorts (otherwise start and end below will be inconsistent across cohorts)
-	- PLINK: Format should be PLINK binary (i.e. input.{bed,bim,fam})
-	- bgen: Format should be bgen, index and .sample file (i.e. input.{bgen,bgi,sample})
+        - PLINK: Format should be PLINK binary (i.e. input.{bed,bim,fam})
+        - bgen: Format should be bgen, index and .sample file (i.e. input.{bgen,bgi,sample})
     --inputbed
     --inputbim
     --inputfam
@@ -129,15 +129,15 @@ Note the "--" flags and the necessity for arguments to be attached to flags with
     --inputbgi
     --inputsample
         - OPTIONAL
-	- As --input above, but separate files
+        - As --input above, but separate files
     --chromosome
         - MANDATORY
         - Chromosome of the region to be included in the LD matrix
     --start
-	- MANDATORY
+        - MANDATORY
         - Leftmost base position of the region to be included in the LD matrix (inclusive)
     --end
-	- MANDATORY
+        - MANDATORY
         - Rightmost base position of the region to be included in the LD matrix (inclusive)
     --extract
 	- OPTIONAL
@@ -173,3 +173,4 @@ Note the "--" flags and the necessity for arguments to be attached to flags with
 
     - ${input}_chr${chr}_${start}_${end}.bcor
         - Summary correlation matrix for the segment
+
