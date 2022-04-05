@@ -74,6 +74,7 @@ To generate LDStore files, run:
 # Limiting to SNPs - SNPs.txt
 # Limiting to individuals - Indivs.txt
 # Extracting LD for chromosome 1, positions 1-3000000
+# 10000 individuals in Indivs.txt
 
 bash \
 GenerateLDStore.bash \
@@ -83,6 +84,7 @@ GenerateLDStore.bash \
 --end=3000001 \
 --extract=SNPs.txt \
 --keep=Indivs.txt \
+--samplen=10000 \
 --output=OutputName \
 --inputtype=plink \
 --ldstorepath=path/to/ldstore_v2.0_x86_64 \
@@ -99,6 +101,7 @@ GenerateLDStore.bash \
 --end=3000001 \
 --extract=SNPs.txt \
 --keep=Indivs.txt \
+--samplen=10000 \
 --output=OutputName \
 --inputtype=bgen \
 --ldstorepath=path/to/ldstore_v2.0_x86_64 \
@@ -113,29 +116,60 @@ All flags possible and required for the pipeline are listed below.
 Note the "--" flags and the necessity for arguments to be attached to flags with "="
 
     --input
+        - MANDATORY
         - Prefix of the input file
         - Hard-called imputed data is recommended to maximise coverage
         - Ensure that the same genome build is being used across cohorts (otherwise start and end below will be inconsistent across cohorts)
+	- PLINK: Format should be PLINK binary (i.e. input.{bed,bim,fam})
+	- bgen: Format should be bgen, index and .sample file (i.e. input.{bgen,bgi,sample})
+    --inputbed
+    --inputbim
+    --inputfam
+    --inputbgen
+    --inputbgi
+    --inputsample
+        - OPTIONAL
+	- As --input above, but separate files
     --chromosome
+        - MANDATORY
         - Chromosome of the region to be included in the LD matrix
     --start
+	- MANDATORY
         - Leftmost base position of the region to be included in the LD matrix (inclusive)
     --end
+	- MANDATORY
         - Rightmost base position of the region to be included in the LD matrix (inclusive)
     --extract
-        - List of SNPs to be included in the LD matrix, one SNP per line, no header. Can be left out if no SNP filter is required
+	- OPTIONAL
+        - List of SNPs to be included in the LD matrix, one SNP per line, no header.
     --keep
-        - List of individuals to be used when calculating the LD matrix, one set of individual IDs per line (as FID IID, space-delimited), no header. Can be left out if no individual filter is required
+        - OPTIONAL
+        - List of individuals to be used when calculating the LD matrix.
+	- PLINK: Should be in PLINK --keep format if included.
+	- bgen: Should be a list of samples, one sample per line, no header. Samples should be identified by ID_1 from the .sample file. 
+    --samplen
+        - MANDATORY
+	- N of samples to include in the LD matrix
+	- Should be NCase + NControl for a binary phenotype (i.e. not NEff)
     --output
+	- MANDATORY
         - Prefix of output file names
+	- Will overwrite any files with same names (see [Output](#output) below)!
     --inputtype
-       - Type of input file - must be "plink" or "bgen"
+        - MANDATORY
+        - Type of input file - must be "plink" or "bgen"
     --ldstorepath
-       - Full path to LDStore v2 binary
+        - MANDATORY
+        - Full path to LDStore v2 binary
     --plinkpath
-      - Full path to PLINK1.9 binary. Can be left out if type=bgen 
+	- PLINK MANDATORY
+        - Full path to PLINK1.9 binary. Can be left out if type=bgen 
     --bgenpath
     --qctoolpath
-      - Full paths to bgen tools folder and to qctool2 binary. Can be left out if type=plink
+	- bgen MANDATORY
+        - Full paths to bgen tools folder and to qctool2 binary. Can be left out if type=plink
 
 ## Output
+
+    - ${input}_chr${chr}_${start}_${end}.bcor
+        - Summary correlation matrix for the segment

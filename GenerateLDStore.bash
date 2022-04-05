@@ -1,7 +1,11 @@
 ### Script: Generate LDStore LD Matrix files
 ### Date: 2022-03-25
 ### Authors: JRIColeman
-### Version: 0.1.2022.03.25
+### Version: 0.1.2022.04.05
+
+## Declare numeric options
+
+declare -i chromosome
 
 ## Get command line options
 
@@ -18,11 +22,19 @@ while getopts :-: OPT; do
   fi
   case "$OPT" in
     input )    needs_arg; input="$OPTARG" ;;
+    inputbed )    needs_arg; inputbed="$OPTARG" ;;
+    inputbim )    needs_arg; inputbim="$OPTARG" ;;
+    inputfam )    needs_arg; inputfam="$OPTARG" ;;
+    inputbgen )    needs_arg; inputbgen="$OPTARG" ;;
+    inputbgi )    needs_arg; inputbgi="$OPTARG" ;;
+    inputsample )    needs_arg; inputsample="$OPTARG" ;;
     chromosome )    needs_arg; chromosome="$OPTARG" ;;
     start )    needs_arg; start="$OPTARG" ;;
     end )    needs_arg; end="$OPTARG" ;;
     extract )    needs_arg; extract="$OPTARG" ;;
     keep )    needs_arg; keep="$OPTARG" ;;
+    samplen )    needs_arg; samplen="$OPTARG" ;;
+    threads )    needs_arg; threads="$OPTARG" ;;
     output )    needs_arg; output="$OPTARG" ;;
     inputtype )    needs_arg; inputtype="$OPTARG" ;;
     ldstorepath )    needs_arg; ldstorepath="$OPTARG" ;;
@@ -35,280 +47,291 @@ while getopts :-: OPT; do
 done
 shift $((OPTIND-1)) # remove parsed options and args from $@ list
 
-## Check required commands exist
+## Check required commands exist - print helptext if no input exists
 
 # HT: Lionel
 # https://stackoverflow.com/a/13864829/2518990
 
-if [ -z ${input+x} ]
+if [ -z ${input+x} ] && [ -z ${inputbed+x} ] && [ -z ${inputbgen+x} ]
 then
-    echo "ERROR: Must have --input"
+    echo -e "\nERROR: Must have one of --input, --inputbed, or --inputbgen"
+    echo "
+All flags possible and required for the pipeline are listed below.
+
+Note the '--' flags and the necessity for arguments to be attached to flags with '='
+
+    --input
+        - MANDATORY
+        - Prefix of the input file
+        - Hard-called imputed data is recommended to maximise coverage
+        - Ensure that the same genome build is being used across cohorts (otherwise start and end below will be inconsistent across cohorts)
+	 - PLINK: Format should be PLINK binary (i.e. input.{bed,bim,fam})
+	 - bgen: Format should be bgen, index and .sample file (i.e. input.{bgen,bgi,sample})
+    --inputbed
+    --inputbim
+    --inputfam
+    --inputbgen
+    --inputbgi
+    --inputsample
+        - OPTIONAL
+	 - As --input above, but separate files
+    --chromosome
+        - MANDATORY
+        - Chromosome of the region to be included in the LD matrix
+    --start
+	 - MANDATORY
+        - Leftmost base position of the region to be included in the LD matrix (inclusive)
+    --end
+	 - MANDATORY
+        - Rightmost base position of the region to be included in the LD matrix (inclusive)
+    --extract
+	 - OPTIONAL
+        - List of SNPs to be included in the LD matrix, one SNP per line, no header.
+    --keep
+        - OPTIONAL
+        - List of individuals to be used when calculating the LD matrix.
+	 - PLINK: Should be in PLINK --keep format if included.
+	 - bgen: Should be a list of samples, one sample per line, no header. Samples should be identified by ID_1 from the .sample file.
+    --samplen
+        - MANDATORY
+	 - N of samples to include in the LD matrix
+	 - Should be NCase + NControl for a binary phenotype (i.e. not NEff)
+    --output
+	 - MANDATORY
+        - Prefix of output file names
+	 - Will overwrite any files with same names (see [Output](#output) below)!
+    --inputtype
+        - MANDATORY
+        - Type of input file - must be 'plink' or 'bgen'
+    --ldstorepath
+        - MANDATORY
+        - Full path to LDStore v2 binary
+    --plinkpath
+	 - PLINK MANDATORY
+        - Full path to PLINK1.9 binary. Can be left out if type=bgen
+    --bgenpath
+    --qctoolpath
+	 - bgen MANDATORY
+        - Full paths to bgen tools folder and to qctool2 binary. Can be left out if type=plink
+"
     exit
+fi
+
+if [ -z ${input+x} ] && [ -z ${inputbed+x} ]
+then
+    if [ -z ${inputbgi+x} ]
+    then
+	echo -e "\nERROR: --inputbgen must have --inputbgi"
+	exit
+    fi
+    if [ -z ${inputsample+x} ]
+    then
+	echo -e "\nERROR: --inputbgen must have --inputsample"
+	exit
+    fi
+fi
+
+if [ -z ${input+x} ] && [ -z ${inputbgen+x} ]
+then
+    if [ -z ${inputbim+x} ]
+    then
+        echo -e "\nERROR: --inputbed must have --inputbim"
+        exit
+    fi
+    if [ -z ${inputfam+x} ]
+    then
+        echo -e "\nERROR: --inputbed must have --inputfam"
+        exit
+    fi
 fi
 
 if [ -z ${chromosome+x} ]
 then
-    echo "ERROR: Must have --chromosome"
+    echo -e "\nERROR: Must have --chromosome"
     exit
 fi
 
 if [ -z ${start+x} ]
 then
-    echo "ERROR: Must have --start"
+    echo -e "\nERROR: Must have --start"
     exit
 fi
 
 if [ -z ${end+x} ]
 then
-    echo "ERROR: Must have --end"
+    echo -e "\nERROR: Must have --end"
     exit
+fi
+
+if [ -z ${samplen+x} ]
+then
+    echo -e "\nERROR: Must have --samplen"
+    exit
+fi
+
+if [ -z ${threads+x} ]
+then
+    threads=1
 fi
 
 if [ -z ${output+x} ]
 then
-    echo "ERROR: Must have --output"
+    echo -e "\nERROR: Must have --output"
     exit
 fi
 
 if [ -z ${inputtype+x} ]
 then
-    echo "ERROR: Must have --inputtype"
+    echo -e "\nERROR: Must have --inputtype"
     exit
 fi
 
 if [ -z ${ldstorepath+x} ]
 then
-    echo "ERROR: Must have --ldstorepath"
+    echo -e "\nERROR: Must have --ldstorepath"
     exit
 fi
 
 if [ -z ${plinkpath+x} ] && [ -z ${bgenpath+x} ]
 then
-    echo "ERROR: Must have at least one of --plinkpath or --bgenpath"
+    echo -e "\nERROR: Must have at least one of --plinkpath or --bgenpath"
     exit
 fi
 
 if [ -z ${plinkpath+x} ] && [ -z ${qctoolpath+x} ]
 then
-    echo "ERROR: --bgenpath must be accompanied by --qctoolpath"
+    echo -e "\nERROR: --bgenpath must be accompanied by --qctoolpath"
     exit
 fi
 
-## Split data to segment for regions of interest and write Z files
+if [ -z ${plinkpath+x} ] && [ -z ${keep+x} ]
+then
+    echo -e "\nERROR: --bgenpath must be accompanied by a .sample file passed to --keep"
+    exit
+fi
 
-if [ -z $extract ]
+## Input is PLINK
+
+if [ $inputtype -eq "plink" ]
 then
 
+    echo -e "\nInput is PLINK"
 
-else
 
-    ## TO DO - Sort issue with chr < 10 being 01,02 etc. (as below) and chr > 9 being 10,11,12 etc.
-    
-    cat <(echo "SNPID rsid chromosome position A1 A2") \
-    <(LANG=C fgrep -wf $extract \
-    <($bgenpath/bin/bgenix \
-    -g $input.bgen \
-    -i $input.bgi \
-    -incl-range 0${chromosome}:${start}-${end} -list) | \
-    awk '{print $1, $2, $3, $4, $6, $7}') > ${input}_chr${chr}_${start}_${end}.incl.list
+fi
 
-    ## YOU ARE HERE
+## Input is bgen
 
-    
-	    awk -v chr=$chr '{print $1, $2, $3, $4, $5, $6, $1, $2, chr, $4, $5, $6}' MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.incl.list \
-	    > MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.remap
+if [ $inputtype -eq "bgen" ]
+then
 
-            /scratch/groups/ukbiobank/Edinburgh_Data/Software/bgen_tools/bin/bgenix \
-            -g ukb_imp_chr${chr}_v3_MAF1_INFO4.bgen \
-      	    -i ukb_imp_chr${chr}_v3_MAF1_INFO4.bgen.bgi \
-            -incl-range 0${chr}:${start}-${end} > ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4_TEMP.bgen
+    echo -e "\nInput is bgen"
 
-            qctool -g ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4_TEMP.bgen -map-id-data MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.remap \
-	    -incl-variants MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.incl.list \
-	    -s wukb16577_imp_chr1_v3_s487283.sample -incl-samples ukb_WG_v3_MAF1_INFO4.incl -og ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4.bgen
+    ## Split data to segment for regions of interest and write Z files
 
-            rm ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4_TEMP.bgen
+    # Give chromosome leading 0 for segment extraction
 
-            ## Index
-	    /scratch/groups/ukbiobank/Edinburgh_Data/Software/bgen_tools/bin/bgenix \
-            -g ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4.bgen \
-            -index
-
-            ## Write Z files
-	    awk '{print $2, $3, $4, $5, $6}' MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.incl.list | \
-	    sed -e 's/A1/allele1/g' -e 's/A2/allele2/g' -e 's/ 01 / 1 /g' \
-	    > ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4.z
-        done
-    fi
-    if [ $chr -eq 5 ]
+    if [ $chromosome -lt 10 ]
     then
-        for start in 101000001 102000001 103000001 
-	do
-            end=$start+3000000
-
-            LANG=C fgrep -wf daner_MDD29_noPharma_UKBB_SNPs.txt /scratch/groups/ukbiobank/usr/KCL_Data_Analyses/MDD_BIP/MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT | \
-	    awk -v chr=$chr -v start=$start -v end=$end '$1 == chr && $3 >= start && $3 <= end {print $2}' \
-	    > MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.snps
-
-            wc -l MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.snps
-	    sort MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.snps | uniq | wc -l
-
-            cat <(echo "SNPID rsid chromosome position A1 A2") \
-            <(LANG=C fgrep -wf MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.snps \
-            <(/scratch/groups/ukbiobank/Edinburgh_Data/Software/bgen_tools/bin/bgenix \
-            -g ukb_imp_chr${chr}_v3_MAF1_INFO4.bgen \
-            -i ukb_imp_chr${chr}_v3_MAF1_INFO4.bgen.bgi \
-            -incl-range 0${chr}:${start}-${end} -list) | \
-	    awk '{print $1, $2, $3, $4, $6, $7}') > MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.incl.list
-
-	    awk -v chr=$chr '{print $1, $2, $3, $4, $5, $6, $1, $2, chr, $4, $5, $6}' MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.incl.list \
-	    > MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.remap
-
-            /scratch/groups/ukbiobank/Edinburgh_Data/Software/bgen_tools/bin/bgenix \
-            -g ukb_imp_chr${chr}_v3_MAF1_INFO4.bgen \
-      	    -i ukb_imp_chr${chr}_v3_MAF1_INFO4.bgen.bgi \
-            -incl-range 0${chr}:${start}-${end} > ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4_TEMP.bgen
-
-            qctool -g ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4_TEMP.bgen -map-id-data MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.remap \
-	    -incl-variants MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.incl.list \
-	    -s wukb16577_imp_chr1_v3_s487283.sample -incl-samples ukb_WG_v3_MAF1_INFO4.incl -og ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4.bgen
-
-            rm ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4_TEMP.bgen
-
-            ## Index
-	    /scratch/groups/ukbiobank/Edinburgh_Data/Software/bgen_tools/bin/bgenix \
-            -g ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4.bgen \
-            -index
-
-            ## Write Z files
-	    awk '{print $2, $3, $4, $5, $6}' MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.incl.list  | \
-	    sed -e 's/A1/allele1/g' -e 's/A2/allele2/g' -e 's/ 05 / 5 /g' \
-	    > ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4.z
-        done
+	rangechromosome=$(echo "0"$chromosome)
+    else
+	rangechromosome=$chromosome
     fi
-    if [ $chr -eq 14 ]
+
+    # Split to segment
+
+    echo -e "\nSplitting to " $chromosome":"$start"-"$end
+
+    $bgenpath/bin/bgenix \
+	-g $input.bgen \
+	-i $input.bgi \
+	-incl-range ${rangechromosome}:${start}-${end} > ${input}_chr${chr}_${start}_${end}_TEMP.bgen
+
+    if [ -z ${extract+x} ]
     then
-        for start in 40000001 41000001 42000001
-	do
-            end=$start+3000000
 
-            LANG=C fgrep -wf daner_MDD29_noPharma_UKBB_SNPs.txt /scratch/groups/ukbiobank/usr/KCL_Data_Analyses/MDD_BIP/MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT | \
-	    awk -v chr=$chr -v start=$start -v end=$end '$1 == chr && $3 >= start && $3 <= end {print $2}' \
-	    > MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.snps
+        # Get SNPs in segment
 
-            wc -l MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.snps
-	    sort MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.snps | uniq | wc -l
+	cat <(echo "SNPID rsid rangechromosome position A1 A2 SNPID rsid chromosome position A1 A2") \
+	    <($bgenpath/bin/bgenix \
+		  -g $input.bgen \
+		  -i $input.bgi \
+		  -incl-range ${rangechromosome}:${start}-${end} -list | \
+		  awk -v chromosome=$chromosome '{print $1, $2, $3, $4, $6, $7, $1, $2, chromosome, $4, $6, $7}') \
+	    > ${input}_chr${chr}_${start}_${end}.incl.list
 
-            cat <(echo "SNPID rsid chromosome position A1 A2") \
-            <(LANG=C fgrep -wf MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.snps \
-            <(/scratch/groups/ukbiobank/Edinburgh_Data/Software/bgen_tools/bin/bgenix \
-            -g ukb_imp_chr${chr}_v3_MAF1_INFO4.bgen \
-            -i ukb_imp_chr${chr}_v3_MAF1_INFO4.bgen.bgi \
-            -incl-range ${chr}:${start}-${end} -list) | \
-	    awk '{print $1, $2, $3, $4, $6, $7}') > MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.incl.list
+    else
 
-	    awk -v chr=$chr '{print $1, $2, $3, $4, $5, $6, $1, $2, chr, $4, $5, $6}' MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.incl.list \
-	    > MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.remap
+	echo -e "\nExtracting SNPs from " $extract
 
-            /scratch/groups/ukbiobank/Edinburgh_Data/Software/bgen_tools/bin/bgenix \
-            -g ukb_imp_chr${chr}_v3_MAF1_INFO4.bgen \
-      	    -i ukb_imp_chr${chr}_v3_MAF1_INFO4.bgen.bgi \
-            -incl-range ${chr}:${start}-${end} > ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4_TEMP.bgen
+	# Filter segment for SNPs in extract list
 
-            qctool -g ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4_TEMP.bgen -map-id-data MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.remap \
-	    -incl-variants MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.incl.list \
-	    -s wukb16577_imp_chr1_v3_s487283.sample -incl-samples ukb_WG_v3_MAF1_INFO4.incl -og ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4.bgen
+	cat <(echo "SNPID rsid rangechromosome position A1 A2 SNPID rsid chromosome position A1 A2") \
+	    <(LANG=C fgrep -wf $extract \
+		  <($bgenpath/bin/bgenix \
+			-g $input.bgen \
+			-i $input.bgi \
+			-incl-range ${rangechromosome}:${start}-${end} -list) | \
+		  awk -v chromosome=$chromosome '{print $1, $2, $3, $4, $6, $7, $1, $2, chromosome, $4, $6, $7}') \
+	    > ${input}_chr${chr}_${start}_${end}.incl.list
 
-            rm ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4_TEMP.bgen
-
-            ## Index
-	    /scratch/groups/ukbiobank/Edinburgh_Data/Software/bgen_tools/bin/bgenix \
-            -g ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4.bgen \
-            -index
-
-            ## Write Z files
-	    awk '{print $2, $3, $4, $5, $6}' MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.incl.list  | \
-	    sed -e 's/A1/allele1/g' -e 's/A2/allele2/g' \
-	    > ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4.z
-        done
     fi
-    if [ $chr -eq 18 ]
+
+    qctoolcommand=$qctoolpath/qctool \
+		 -g ${input}_chr${chr}_${start}_${end}_TEMP.bgen \
+		 -map-id-data ${input}_chr${chr}_${start}_${end}.incl.list \
+		 -incl-variants <(awk '{print $1, $2, $3, $4, $5, $6}' ${input}_chr${chr}_${start}_${end}.incl.list) \
+		 -s ${input}.sample
+
+    if [ -z ${keep+x} ]
     then
-        for start in 29000001 30000001 31000001
-	do
-            end=$start+3000000
-
-            LANG=C fgrep -wf daner_MDD29_noPharma_UKBB_SNPs.txt /scratch/groups/ukbiobank/usr/KCL_Data_Analyses/MDD_BIP/MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT | \
-	    awk -v chr=$chr -v start=$start -v end=$end '$1 == chr && $3 >= start && $3 <= end {print $2}' \
-	    > MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.snps
-
-            wc -l MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.snps
-	    sort MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.snps | uniq | wc -l
-
-            cat <(echo "SNPID rsid chromosome position A1 A2") \
-            <(LANG=C fgrep -wf MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.snps \
-            <(/scratch/groups/ukbiobank/Edinburgh_Data/Software/bgen_tools/bin/bgenix \
-            -g ukb_imp_chr${chr}_v3_MAF1_INFO4.bgen \
-            -i ukb_imp_chr${chr}_v3_MAF1_INFO4.bgen.bgi \
-            -incl-range ${chr}:${start}-${end} -list) | \
-	    awk '{print $1, $2, $3, $4, $6, $7}') > MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.incl.list
-
-	    awk -v chr=$chr '{print $1, $2, $3, $4, $5, $6, $1, $2, chr, $4, $5, $6}' MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.incl.list \
-	    > MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.remap
-
-            /scratch/groups/ukbiobank/Edinburgh_Data/Software/bgen_tools/bin/bgenix \
-            -g ukb_imp_chr${chr}_v3_MAF1_INFO4.bgen \
-      	    -i ukb_imp_chr${chr}_v3_MAF1_INFO4.bgen.bgi \
-            -incl-range ${chr}:${start}-${end} > ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4_TEMP.bgen
-
-            qctool -g ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4_TEMP.bgen -map-id-data MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.remap \
-	    -incl-variants MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.incl.list \
-	    -s wukb16577_imp_chr1_v3_s487283.sample -incl-samples ukb_WG_v3_MAF1_INFO4.incl -og ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4.bgen
-
-            rm ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4_TEMP.bgen
-
-            ## Index
-	    /scratch/groups/ukbiobank/Edinburgh_Data/Software/bgen_tools/bin/bgenix \
-            -g ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4.bgen \
-            -index
-
-            ## Write Z files
-	    awk '{print $2, $3, $4, $5, $6}' MHQ_Depression_WG_MAF1_INFO4_HRC_Only_Filtered_Dups_FOR_METACARPA_INFO6_A5_NTOT_chr${chr}_${start}_${end}.incl.list  | \
-	    sed -e 's/A1/allele1/g' -e 's/A2/allele2/g' \	    
-	    > ukb_imp_chr${chr}_${start}_${end}_v3_MAF1_INFO4.z
-        done
+	qctoolcommand=$(echo $qctoolcommand " -og " ${input}_chr${chr}_${start}_${end}.bgen)
+	$qctoolcommand
+    else
+	qctoolcommand=$(echo $qctoolcommand " -incl-samples " $keep " -og " ${input}_chr${chr}_${start}_${end}.bgen)
+	$qctoolcommand
     fi
-done
 
-## Write master files
+    ## Clean up temporary bgen
 
-for fileroot in ukb_imp_chr14_40000001_43000001_v3_MAF1_INFO4 \
-ukb_imp_chr14_41000001_44000001_v3_MAF1_INFO4 \
-ukb_imp_chr14_42000001_45000001_v3_MAF1_INFO4 \
-ukb_imp_chr1_71000001_74000001_v3_MAF1_INFO4 \
-ukb_imp_chr1_72000001_75000001_v3_MAF1_INFO4 \
-ukb_imp_chr1_73000001_76000001_v3_MAF1_INFO4 \
-ukb_imp_chr18_29000001_32000001_v3_MAF1_INFO4 \
-ukb_imp_chr18_30000001_33000001_v3_MAF1_INFO4 \
-ukb_imp_chr18_31000001_34000001_v3_MAF1_INFO4 \
-ukb_imp_chr5_101000001_104000001_v3_MAF1_INFO4 \
-ukb_imp_chr5_102000001_105000001_v3_MAF1_INFO4 \
-ukb_imp_chr5_103000001_106000001_v3_MAF1_INFO4
-do
-    cat <(echo "z;bgen;bgi;bcor;ld;n_samples;sample;incl") <(echo -e "${fileroot}.z;${fileroot}.bgen;${fileroot}.bgen.bgi;${fileroot}.bcor;${fileroot}.ld;92945;wukb16577_imp_chr1_v3_s487283.sample;ukb_WG_v3_MAF1_INFO4.incl") >  ${fileroot}.master
-done
+    rm ${input}_chr${chr}_${start}_${end}_TEMP.bgen
 
+    ## Index bgen
 
-## Write bcor
+    $bgenpath/bin/bgenix \
+	-g ${input}_chr${chr}_${start}_${end}.bgen \
+	-index
 
-for file in *.master;
-do
-    /scratch/users/k1204688/Tools/PolyFun/ldstore_v2.0_x86_64/ldstore_v2.0_x86_64 \
-    --in-files $file \
+    ## Write Z files
+
+    awk '{print $2, $3, $4, $5, $6}' ${input}_chr${chr}_${start}_${end}.incl.list | \
+	sed -e 's/A1/allele1/g' -e 's/A2/allele2/g' -e 's/ '$rangechromosome' / '$chromosome' /g' \
+	    > ${input}_chr${chr}_${start}_${end}.z
+
+    ## Write master files
+
+    masterroot=$(echo ${input}"_chr"${chr}"_"${start}"_"${end})
+
+    if [ -z ${master+x} ]
+    then
+	cat <(echo "z;bgen;bgi;bcor;ld;n_samples;sample") \
+	    <(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;${input}.sample") >  $masterroot.master
+    else
+	cat <(echo "z;bgen;bgi;bcor;ld;n_samples;sample;incl") \
+	    <(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;${input}.sample;$keep") >  $masterroot.master
+    fi
+
+    ## Write bcor
+
+    $ldstorepath/ldstore_v2.0_x86_64 \
+    --in-files $masterroot.master \
     --write-bcor \
     --read-only-bgen \
     --compression low \
-    --n-threads 15
-done
+    --n-threads $threads
 
-```
+    ## Clean up
+
+    rm $masterroot.master ${masterroot}.z ${masterroot}.bgen ${masterroot}.bgen.bgi ${masterroot}.incl.list
+
+fi
