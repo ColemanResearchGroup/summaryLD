@@ -307,7 +307,7 @@ then
 
     ## Clean up temporary bgen
 
-#    rm ${output}_chr${chromosome}_${start}_${end}_TEMP.bgen
+    rm ${output}_chr${chromosome}_${start}_${end}_TEMP.bgen
 
     ## Index bgen
 
@@ -345,6 +345,6 @@ then
 
     ## Clean up
 
-#    rm $masterroot.master ${masterroot}.z ${masterroot}.bgen ${masterroot}.bgen.bgi ${masterroot}.remap ${masterroot}.incl.snps
+    rm $masterroot.master ${masterroot}.z ${masterroot}.bgen ${masterroot}.bgen.bgi ${masterroot}.remap ${masterroot}.incl.snps
 
 fi
