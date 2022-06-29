@@ -1,7 +1,13 @@
 ### Script: Generate LDStore LD Matrix files
 ### Date: 2022-03-25
 ### Authors: JRIColeman
-### Version: 0.1.2022.04.05
+### Version: 0.2.2022.06.27
+
+#####################################################################################
+#####################################################################################
+############## INITIALISE OPTIONS AND CHECK REQUIRED INPUTS ARE GIVEN ###############
+#####################################################################################
+#####################################################################################
 
 ## Declare numeric options
 
@@ -212,6 +218,12 @@ then
     exit
 fi
 
+#####################################################################################
+#####################################################################################
+########################### GENERATE LD SUMMARY MATRICES ############################
+#####################################################################################
+#####################################################################################
+
 ## Input is PLINK
 
 if [ $inputtype == "plink" ]
@@ -232,11 +244,27 @@ then
         --fam $inputfam \
         --export bgen-1.2 \
         --threads $threads \
-        --out $output
+        --out $output \
+	--chr $chromosome \
+	--extract bed1 <(echo $chromosome $start $end)
+
+    echo -e "\nConvert sample format to qctoolv2 version"
+
+    cat \
+	<(echo "ID missing sex PHENO1") \
+	<(echo "0 0 D B") \
+	<(awk 'NR > 2 {print $1"_"$2, $3, $4, $5}' $output.sample) \
+	> TEMP.sample
+
+    mv TEMP.sample $output.sample
 
     inputbgen=$output.bgen
-    inputbgi=$output.bgi
+    inputbgi=$output.bgen.bgi
     inputsample=$output.sample
+
+    echo -e "\nMake input bgi"
+
+    $bgenpath/bgenix -g $inputbgen -index
 
 fi
 
@@ -250,7 +278,7 @@ then
     if [ -z ${inputbgen+x} ]
     then
 	inputbgen=$input.bgen
-	inputbgi=$input.bgi
+	inputbgi=$input.bgen.bgi
 	inputsample=$input.sample
     fi
 fi
@@ -271,7 +299,7 @@ fi
 
     echo -e "\nSplitting to "$chromosome":"$start"-"$end
 
-    $bgenpath/bin/bgenix \
+    $bgenpath/bgenix \
 	-g $inputbgen \
 	-i $inputbgi \
 	-incl-range ${rangechromosome}:${start}-${end} > ${output}_chr${chromosome}_${start}_${end}_TEMP.bgen
@@ -281,13 +309,13 @@ fi
 
         # Get SNPs in segment
 
-	cat <(echo "SNPID rsid chromosome position A1 A2 SNPID rsid chromosome position A1 A2") \
-	    <($bgenpath/bin/bgenix \
+	cat <(echo "SNPID rsid chromosome position A1 A2") \
+	    <($bgenpath/bgenix \
 		  -g $inputbgen \
 		  -i $inputbgi \
 		  -incl-range ${rangechromosome}:${start}-${end} -list | \
-		  awk -v chromosome=$chromosome '{print $1, $2, $3, $4, $6, $7, $1, $2, chromosome, $4, $6, $7}') \
-	    > ${output}_chr${chromosome}_${start}_${end}.remap
+		  awk '$2 != "bgenix:" && $2 != "rsid" {print $1, $2, $3, $4, $6, $7}') \
+	    > ${output}_chr${chromosome}_${start}_${end}.incl.snps
 
     else
 
@@ -295,24 +323,25 @@ fi
 
 	# Filter segment for SNPs in extract list
 
-	cat <(echo "SNPID rsid chromosome position A1 A2 SNPID rsid chromosome position A1 A2") \
+	cat <(echo "SNPID rsid chromosome position A1 A2") \
 	    <(LANG=C fgrep -wf $extract \
-		  <($bgenpath/bin/bgenix \
+		  <($bgenpath/bgenix \
 			-g $inputbgen \
 			-i $inputbgi \
 			-incl-range ${rangechromosome}:${start}-${end} -list) | \
-		  awk -v chromosome=$chromosome '{print $1, $2, $3, $4, $6, $7, $1, $2, chromosome, $4, $6, $7}') \
-	    > ${output}_chr${chromosome}_${start}_${end}.remap
+		  awk '$2 != "bgenix:" && $2 != "rsid" {print $1, $2, $3, $4, $6, $7}') \
+	    > ${output}_chr${chromosome}_${start}_${end}.incl.snps
 
     fi
 
-    awk '{print $1, $2, $3, $4, $5, $6}' ${output}_chr${chromosome}_${start}_${end}.remap \
-        > ${output}_chr${chromosome}_${start}_${end}.incl.snps
-
+    awk -v chromosome=$chromosome '{print $1, $2, $3, $4, $5, $6, $1, $2, chromosome, $4, $5, $6}' ${output}_chr${chromosome}_${start}_${end}.incl.snps \
+        > ${output}_chr${chromosome}_${start}_${end}.remap
+    
     qctoolcommand=$(echo $qctoolpath/qctool \
                       -g ${output}_chr${chromosome}_${start}_${end}_TEMP.bgen \
                       -map-id-data ${output}_chr${chromosome}_${start}_${end}.remap \
                       -incl-variants ${output}_chr${chromosome}_${start}_${end}.incl.snps \
+		      -compare-variants-by position,alleles \
                       -s $inputsample)
 
     if [ -z ${keep+x} ]
@@ -326,11 +355,11 @@ fi
 
     ## Clean up temporary bgen
 
-    rm ${output}_chr${chromosome}_${start}_${end}_TEMP.bgen
+    #rm ${output}_chr${chromosome}_${start}_${end}_TEMP.bgen
 
     ## Index bgen
 
-    $bgenpath/bin/bgenix \
+    $bgenpath/bgenix \
 	-g ${output}_chr${chromosome}_${start}_${end}.bgen \
 	-index
 
@@ -364,6 +393,5 @@ fi
 
     ## Clean up
 
-    rm $masterroot.master ${masterroot}.z ${masterroot}.bgen ${masterroot}.bgen.bgi ${masterroot}.remap ${masterroot}.incl.snps
+    #rm $masterroot.master ${masterroot}.z ${masterroot}.bgen ${masterroot}.bgen.bgi ${masterroot}.remap ${masterroot}.incl.snps
 
-fi
