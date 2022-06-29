@@ -19,37 +19,37 @@ die() { echo "$*" >&2; exit 2; }  # complain to STDERR and exit with error
 needs_arg() { if [ -z "$OPTARG" ]; then die "No arg for --$OPT option"; fi; }
 
 while getopts :-: OPT; do
-  # HT: Adam Katz
-  # support long options: https://stackoverflow.com/a/28466267/519360
-  if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
-    OPT="${OPTARG%%=*}"       # extract long option name
-    OPTARG="${OPTARG#$OPT}"   # extract long option argument (may be empty)
-    OPTARG="${OPTARG#=}"      # if long option argument, remove assigning `=`
-  fi
-  case "$OPT" in
-    input )    needs_arg; input="$OPTARG" ;;
-    inputbed )    needs_arg; inputbed="$OPTARG" ;;
-    inputbim )    needs_arg; inputbim="$OPTARG" ;;
-    inputfam )    needs_arg; inputfam="$OPTARG" ;;
-    inputbgen )    needs_arg; inputbgen="$OPTARG" ;;
-    inputbgi )    needs_arg; inputbgi="$OPTARG" ;;
-    inputsample )    needs_arg; inputsample="$OPTARG" ;;
-    chromosome )    needs_arg; chromosome="$OPTARG" ;;
-    start )    needs_arg; start="$OPTARG" ;;
-    end )    needs_arg; end="$OPTARG" ;;
-    extract )    needs_arg; extract="$OPTARG" ;;
-    keep )    needs_arg; keep="$OPTARG" ;;
-    samplen )    needs_arg; samplen="$OPTARG" ;;
-    threads )    needs_arg; threads="$OPTARG" ;;
-    output )    needs_arg; output="$OPTARG" ;;
-    inputtype )    needs_arg; inputtype="$OPTARG" ;;
-    ldstorepath )    needs_arg; ldstorepath="$OPTARG" ;;
-    plinkpath )    needs_arg; plinkpath="$OPTARG" ;;
-    bgenpath )    needs_arg; bgenpath="$OPTARG" ;;
-    qctoolpath )    needs_arg; qctoolpath="$OPTARG" ;;
-    ??* )          die "Illegal option --$OPT" ;;  # bad long option
-    ? )            exit 2 ;;  # bad short option (error reported via getopts)
-  esac
+    # HT: Adam Katz
+    # support long options: https://stackoverflow.com/a/28466267/519360
+    if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
+	OPT="${OPTARG%%=*}"       # extract long option name
+	OPTARG="${OPTARG#$OPT}"   # extract long option argument (may be empty)
+	OPTARG="${OPTARG#=}"      # if long option argument, remove assigning `=`
+    fi
+    case "$OPT" in
+	input )    needs_arg; input="$OPTARG" ;;
+	inputbed )    needs_arg; inputbed="$OPTARG" ;;
+	inputbim )    needs_arg; inputbim="$OPTARG" ;;
+	inputfam )    needs_arg; inputfam="$OPTARG" ;;
+	inputbgen )    needs_arg; inputbgen="$OPTARG" ;;
+	inputbgi )    needs_arg; inputbgi="$OPTARG" ;;
+	inputsample )    needs_arg; inputsample="$OPTARG" ;;
+	chromosome )    needs_arg; chromosome="$OPTARG" ;;
+	start )    needs_arg; start="$OPTARG" ;;
+	end )    needs_arg; end="$OPTARG" ;;
+	extract )    needs_arg; extract="$OPTARG" ;;
+	keep )    needs_arg; keep="$OPTARG" ;;
+	samplen )    needs_arg; samplen="$OPTARG" ;;
+	threads )    needs_arg; threads="$OPTARG" ;;
+	output )    needs_arg; output="$OPTARG" ;;
+	inputtype )    needs_arg; inputtype="$OPTARG" ;;
+	ldstorepath )    needs_arg; ldstorepath="$OPTARG" ;;
+	plinkpath )    needs_arg; plinkpath="$OPTARG" ;;
+	bgenixpath )    needs_arg; bgenixpath="$OPTARG" ;;
+	qctoolpath )    needs_arg; qctoolpath="$OPTARG" ;;
+	??* )          die "Illegal option --$OPT" ;;  # bad long option
+	? )            exit 2 ;;  # bad short option (error reported via getopts)
+    esac
 done
 shift $((OPTIND-1)) # remove parsed options and args from $@ list
 
@@ -110,17 +110,29 @@ Note the '--' flags and the necessity for arguments to be attached to flags with
 	- Will overwrite any files with same names (see [Output](#output) below)!
     --inputtype
         - MANDATORY
-        - Type of input file - must be 'plink' or 'bgen'
+        - Type of input file - must be 'plink', 'plinkbgen' or 'bgen'
+	- plink
+	    - Filtering operations are run in plink2
+	    - Output is converted to bgen for generating LD matrix
+	- plinkbgen
+	    - Input is converted to bgen in plink2
+	    - Filtering operations are run in qctool2
+	    - Output is converted to bgen for generating LD matrix
+	- bgen
+	    - Filtering operations are run in qctool2
+	    - Output is converted to bgen for generating LD matrix	
     --ldstorepath
         - MANDATORY
         - Full path to LDStore v2 binary
     --plinkpath
-	- PLINK MANDATORY // bgen OPTIONAL
-        - Full path to PLINK2 binary.
-    --bgenpath
-    --qctoolpath
+	- plink MANDATORY // plinkbgen MANDATORY // bgen NOT REQUIRED
+        - Full path to PLINK2 program (not including program itself).
+    --bgenixpath
 	- MANDATORY
-        - Full paths to bgen tools folder and to qctool2 binary. Can be left out if type=plink
+        - Full path to bgenix program (not including program itself).
+    --qctoolpath
+	- plink NOT REQUIRED // plinkbgen MANDATORY // bgen MANDATORY
+        - Full path to qctool2 binary (not including program itself).
 "
     exit
 fi
@@ -129,12 +141,12 @@ if [ -z ${input+x} ] && [ -z ${inputbed+x} ]
 then
     if [ -z ${inputbgi+x} ]
     then
-	echo -e "\nERROR: --inputbgen must have --inputbgi"
+	echo -e "\nERROR: --inputbgen must have --inputbgi\n"
 	exit
     fi
     if [ -z ${inputsample+x} ]
     then
-	echo -e "\nERROR: --inputbgen must have --inputsample"
+	echo -e "\nERROR: --inputbgen must have --inputsample\n"
 	exit
     fi
 fi
@@ -143,37 +155,37 @@ if [ -z ${input+x} ] && [ -z ${inputbgen+x} ]
 then
     if [ -z ${inputbim+x} ]
     then
-        echo -e "\nERROR: --inputbed must have --inputbim"
+        echo -e "\nERROR: --inputbed must have --inputbim\n"
         exit
     fi
     if [ -z ${inputfam+x} ]
     then
-        echo -e "\nERROR: --inputbed must have --inputfam"
+        echo -e "\nERROR: --inputbed must have --inputfam\n"
         exit
     fi
 fi
 
 if [ -z ${chromosome+x} ]
 then
-    echo -e "\nERROR: Must have --chromosome"
+    echo -e "\nERROR: Must have --chromosome\n"
     exit
 fi
 
 if [ -z ${start+x} ]
 then
-    echo -e "\nERROR: Must have --start"
+    echo -e "\nERROR: Must have --start\n"
     exit
 fi
 
 if [ -z ${end+x} ]
 then
-    echo -e "\nERROR: Must have --end"
+    echo -e "\nERROR: Must have --end\n"
     exit
 fi
 
 if [ -z ${samplen+x} ]
 then
-    echo -e "\nERROR: Must have --samplen"
+    echo -e "\nERROR: Must have --samplen\n"
     exit
 fi
 
@@ -184,43 +196,43 @@ fi
 
 if [ -z ${output+x} ]
 then
-    echo -e "\nERROR: Must have --output"
+    echo -e "\nERROR: Must have --output\n"
     exit
 fi
 
 if [ -z ${inputtype+x} ]
 then
-    echo -e "\nERROR: Must have --inputtype"
+    echo -e "\nERROR: Must have --inputtype\n"
     exit
 fi
 
 if [ -z ${ldstorepath+x} ]
 then
-    echo -e "\nERROR: Must have --ldstorepath"
+    echo -e "\nERROR: Must have --ldstorepath\n"
     exit
 fi
 
-if [ -z ${plinkpath+x} ] && [ -z ${bgenpath+x} ]
+if [ -z ${plinkpath+x} ] && [ -z ${bgenixpath+x} ]
 then
-    echo -e "\nERROR: Must have at least one of --plinkpath or --bgenpath"
+    echo -e "\nERROR: Must have at least one of --plinkpath or --bgenixpath\n"
     exit
 fi
 
-if [ -z ${plinkpath+x} ] && [ -z ${qctoolpath+x} ]
+if [ -z ${bgenixpath+x} ]
 then
-    echo -e "\nERROR: --bgenpath must be accompanied by --qctoolpath"
+    echo -e "\nERROR: Must have --bgenixpath\n"
     exit
 fi
 
-if [ -z ${plinkpath+x} ] && [ -z ${keep+x} ]
+if [ -z ${bgenixpath+x} ] && [ -z ${qctoolpath+x} ]
 then
-    echo -e "\nERROR: --bgenpath must be accompanied by a .sample file passed to --keep"
+    echo -e "\nERROR: --bgenixpath must be accompanied by --qctoolpath\n"
     exit
 fi
 
 #####################################################################################
 #####################################################################################
-########################### GENERATE LD SUMMARY MATRICES ############################
+################################ PREPARE INPUT BGEN #################################
 #####################################################################################
 #####################################################################################
 
@@ -229,59 +241,154 @@ fi
 if [ $inputtype == "plink" ]
 then
 
-    echo -e "\nInput is PLINK"
+    echo -e "\nInput is PLINK\n"
 
     if [ -z ${inputbed+x} ]
     then
-        inputbed=$input.bed
+	inputbed=$input.bed
         inputbim=$input.bim
         inputfam=$input.fam
     fi
-
-    $plinkpath/plink2 \
-        --bed $inputbed \
-        --bim $inputbim \
-        --fam $inputfam \
-        --export bgen-1.2 \
-        --threads $threads \
-        --out $output \
-	--chr $chromosome \
-	--extract bed1 <(echo $chromosome $start $end)
-
-    echo -e "\nConvert sample format to qctoolv2 version"
-
-    cat \
-	<(echo "ID missing sex PHENO1") \
-	<(echo "0 0 D B") \
-	<(awk 'NR > 2 {print $1"_"$2, $3, $4, $5}' $output.sample) \
-	> TEMP.sample
-
-    mv TEMP.sample $output.sample
-
-    inputbgen=$output.bgen
-    inputbgi=$output.bgen.bgi
-    inputsample=$output.sample
-
-    echo -e "\nMake input bgi"
-
-    $bgenpath/bgenix -g $inputbgen -index
-
-fi
-
-## Input is bgen
-
-if [ $inputtype == "bgen" ]
-then
-
-    echo -e "\nInput is bgen"
-
-    if [ -z ${inputbgen+x} ]
+    
+    if [ -z ${keep+x} ] && [ -z ${extract+x} ]
     then
-	inputbgen=$input.bgen
-	inputbgi=$input.bgen.bgi
-	inputsample=$input.sample
+
+	echo -e "\nConvert to bgen and filter to chromosome:start-end\n"
+	
+	$plinkpath/plink2 \
+            --bed $inputbed \
+            --bim $inputbim \
+            --fam $inputfam \
+            --export bgen-1.2 \
+            --threads $threads \
+            --out ${output}_chr${chromosome}_${start}_${end} \
+	    --chr $chromosome \
+	    --extract bed1 <(echo $chromosome $start $end) \
+    	    --write-snplist
+
+    elif [ -z ${keep+x} ]
+    then
+
+	echo -e "\nConvert to bgen and filter to extract list\n"
+	
+	$plinkpath/plink2 \
+	    --bed $inputbed \
+	    --bim $inputbim \
+	    --fam $inputfam \
+	    --export bgen-1.2 \
+	    --threads $threads \
+	    --out ${output}_chr${chromosome}_${start}_${end} \
+	    --chr $chromosome \
+	    --extract $extract \
+	    --write-snplist
+	
+    elif [ -z ${extract+x} ]
+    then
+
+	echo -e "\nConvert to bgen, filter to chromosome:start-end, keep only keep individuals\n"
+	
+	$plinkpath/plink2 \
+	    --bed $inputbed \
+	    --bim $inputbim \
+	    --fam $inputfam \
+	    --export bgen-1.2 \
+	    --threads $threads \
+	    --out ${output}_chr${chromosome}_${start}_${end} \
+	    --chr $chromosome \
+	    --keep $keep \
+	    --extract bed1 <(echo $chromosome $start $end) \
+    	    --write-snplist
+
+    else
+
+	echo -e "\nConvert to bgen, filter to extract list, keep only keep individuals\n"
+	
+	$plinkpath/plink2 \
+	    --bed $inputbed \
+	    --bim $inputbim \
+	    --fam $inputfam \
+	    --export bgen-1.2 \
+	    --threads $threads \
+	    --out ${output}_chr${chromosome}_${start}_${end} \
+	    --chr $chromosome \
+	    --keep $keep \
+	    --extract $extract \
+	    --write-snplist
     fi
-fi
+
+    ## Write Z files for LDStore
+
+    cat <(echo "rsid chromosome position allele1 allele2") \
+	<(LANG=C fgrep -wf ${output}_chr${chromosome}_${start}_${end}.snplist $inputbim | awk '{print $2, $1, $4, $5, $6}') \
+	> ${output}_chr${chromosome}_${start}_${end}.z
+
+    # Remove snplist
+
+    rm ${output}_chr${chromosome}_${start}_${end}.snplist
+
+else
+    
+    ## Input is PLINK
+
+    if [ $inputtype == "plinkbgen" ]
+    then
+	
+	echo -e "\nInput is PLINK, using BGen methods\n"
+
+	if [ -z ${inputbed+x} ]
+	then
+
+	    inputbed=$input.bed
+            inputbim=$input.bim
+            inputfam=$input.fam
+	fi
+
+	echo -e "\nConvert to bgen and filter to chromosome:start-end\n"
+
+	$plinkpath/plink2 \
+            --bed $inputbed \
+            --bim $inputbim \
+            --fam $inputfam \
+            --export bgen-1.2 \
+            --threads $threads \
+            --out $output \
+	    --chr $chromosome \
+	    --extract bed1 <(echo $chromosome $start $end)
+
+	# Convert sample format to qctoolv2 version
+
+	cat \
+	    <(echo "ID missing sex PHENO1") \
+	    <(echo "0 0 D B") \
+	    <(awk 'NR > 2 {print $1"_"$2, $3, $4, $5}' $output.sample) \
+	    > TEMP.sample
+
+	mv TEMP.sample $output.sample
+
+	inputbgen=$output.bgen
+	inputbgi=$output.bgen.bgi
+	inputsample=$output.sample
+
+	echo -e "\nMake input bgi\n"
+
+	$bgenixpath/bgenix -g $inputbgen -index
+
+    fi
+
+    ## Input is bgen
+
+    if [ $inputtype == "bgen" ]
+    then
+
+	echo -e "\nInput is bgen\n"
+
+	if [ -z ${inputbgen+x} ]
+	then
+	    inputbgen=$input.bgen
+	    inputbgi=$input.bgen.bgi
+	    inputsample=$input.sample
+	fi
+    fi
 
     
     ## Split data to segment for regions of interest and write Z files
@@ -299,7 +406,7 @@ fi
 
     echo -e "\nSplitting to "$chromosome":"$start"-"$end
 
-    $bgenpath/bgenix \
+    $bgenixpath/bgenix \
 	-g $inputbgen \
 	-i $inputbgi \
 	-incl-range ${rangechromosome}:${start}-${end} > ${output}_chr${chromosome}_${start}_${end}_TEMP.bgen
@@ -310,7 +417,7 @@ fi
         # Get SNPs in segment
 
 	cat <(echo "SNPID rsid chromosome position A1 A2") \
-	    <($bgenpath/bgenix \
+	    <($bgenixpath/bgenix \
 		  -g $inputbgen \
 		  -i $inputbgi \
 		  -incl-range ${rangechromosome}:${start}-${end} -list | \
@@ -325,7 +432,7 @@ fi
 
 	cat <(echo "SNPID rsid chromosome position A1 A2") \
 	    <(LANG=C fgrep -wf $extract \
-		  <($bgenpath/bgenix \
+		  <($bgenixpath/bgenix \
 			-g $inputbgen \
 			-i $inputbgi \
 			-incl-range ${rangechromosome}:${start}-${end} -list) | \
@@ -338,11 +445,11 @@ fi
         > ${output}_chr${chromosome}_${start}_${end}.remap
     
     qctoolcommand=$(echo $qctoolpath/qctool \
-                      -g ${output}_chr${chromosome}_${start}_${end}_TEMP.bgen \
-                      -map-id-data ${output}_chr${chromosome}_${start}_${end}.remap \
-                      -incl-variants ${output}_chr${chromosome}_${start}_${end}.incl.snps \
-		      -compare-variants-by position,alleles \
-                      -s $inputsample)
+			 -g ${output}_chr${chromosome}_${start}_${end}_TEMP.bgen \
+			 -map-id-data ${output}_chr${chromosome}_${start}_${end}.remap \
+			 -incl-variants ${output}_chr${chromosome}_${start}_${end}.incl.snps \
+			 -compare-variants-by position,alleles \
+			 -s $inputsample)
 
     if [ -z ${keep+x} ]
     then
@@ -357,41 +464,54 @@ fi
 
     rm ${output}_chr${chromosome}_${start}_${end}_TEMP.bgen
 
-    ## Index bgen
-
-    $bgenpath/bgenix \
-	-g ${output}_chr${chromosome}_${start}_${end}.bgen \
-	-index
-
+    
     ## Write Z files
 
     awk '{print $2, $3, $4, $5, $6}' ${output}_chr${chromosome}_${start}_${end}.remap | \
 	sed -e 's/A1/allele1/g' -e 's/A2/allele2/g' -e 's/ '$rangechromosome' / '$chromosome' /g' \
 	    > ${output}_chr${chromosome}_${start}_${end}.z
 
-    ## Write master files
+    ## Clean up extra files
 
-    masterroot=$(echo ${output}"_chr"${chromosome}"_"${start}"_"${end})
+    rm ${output}_chr${chromosome}_${start}_${end}.remap ${output}_chr${chromosome}_${start}_${end}.incl.snps
+    
+fi
 
-    if [ -z ${keep+x} ]
-    then
-	cat <(echo "z;bgen;bgi;bcor;ld;n_samples;sample") \
-	    <(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;$inputsample") >  $masterroot.master
-    else
-	cat <(echo "z;bgen;bgi;bcor;ld;n_samples;sample;incl") \
-	    <(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;$inputsample;$keep") >  $masterroot.master
-    fi
+#####################################################################################
+#####################################################################################
+########################### GENERATE LD SUMMARY MATRICES ############################
+#####################################################################################
+#####################################################################################
 
-    ## Write bcor
+## Index bgen
 
-    $ldstorepath/ldstore_v2.0_x86_64 \
+$bgenixpath/bgenix \
+    -g ${output}_chr${chromosome}_${start}_${end}.bgen \
+    -index
+
+## Write master files
+
+masterroot=$(echo ${output}"_chr"${chromosome}"_"${start}"_"${end})
+
+if [ -z ${keep+x} ]
+then
+    cat <(echo "z;bgen;bgi;bcor;ld;n_samples;sample") \
+	<(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;$inputsample") >  $masterroot.master
+else
+    cat <(echo "z;bgen;bgi;bcor;ld;n_samples;sample;incl") \
+	<(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;$inputsample;$keep") >  $masterroot.master
+fi
+
+## Write bcor
+
+$ldstorepath/ldstore_v2.0_x86_64 \
     --in-files $masterroot.master \
     --write-bcor \
     --read-only-bgen \
     --compression low \
     --n-threads $threads
 
-    ## Clean up
+## Clean up
 
-    rm $masterroot.master ${masterroot}.z ${masterroot}.bgen ${masterroot}.bgen.bgi ${masterroot}.remap ${masterroot}.incl.snps
+rm $masterroot.master ${masterroot}.z ${masterroot}.bgen ${masterroot}.bgen.bgi 
 
