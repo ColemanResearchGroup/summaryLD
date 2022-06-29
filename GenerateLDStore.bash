@@ -230,6 +230,12 @@ then
     exit
 fi
 
+if [ $inputtype != "plink" ] && [ $inputtype != "plinkbgen" ] && [ $inputtype != "bgen" ]
+then  
+    echo -e "\nERROR: --inputtype must be 'plink', 'plinkbgen' or 'bgen'\n"
+    exit
+fi	
+
 #####################################################################################
 #####################################################################################
 ################################ PREPARE INPUT BGEN #################################
@@ -389,8 +395,7 @@ else
 	    inputsample=$input.sample
 	fi
     fi
-
-    
+   
     ## Split data to segment for regions of interest and write Z files
 
     # Give chromosome leading 0 for segment extraction
@@ -474,7 +479,7 @@ else
     ## Clean up extra files
 
     rm ${output}_chr${chromosome}_${start}_${end}.remap ${output}_chr${chromosome}_${start}_${end}.incl.snps
-    
+
 fi
 
 #####################################################################################
