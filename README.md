@@ -37,6 +37,11 @@ Code below from [BGEN website](https://enkre.net/cgi-bin/code/bgen)
 
 # get it
 wget http://code.enkre.net/bgen/tarball/release/bgen.tgz
+# make bgen folder
+mkdir bgen
+# extract the tar
+tar xzvf bgen.tgz -C bgen --strip-components 1
+# move to bgen
 cd bgen
 # compile it
 ./waf configure
