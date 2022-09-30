@@ -81,6 +81,7 @@ Note the '--' flags and the necessity for arguments to be attached to flags with
     --inputsample
         - OPTIONAL
 	- As --input above, but separate files
+	- NOTE: the sample file needs to be the qctoolv2 version format (https://www.well.ox.ac.uk/~gav/qctool_v2/documentation/sample_file_formats.html)
     --chromosome
         - MANDATORY
         - Chromosome of the region to be included in the LD matrix
