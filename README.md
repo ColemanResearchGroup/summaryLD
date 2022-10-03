@@ -95,7 +95,7 @@ GenerateLDStore.bash \
 --samplen=10000 \
 --threads=2 \
 --output=OutputName \
---inputtype=plinkmain \
+--inputtype=plink \
 --ldstorepath=path/to/ldstore \
 --plinkpath=/path/to/plink \
 --bgenixpath /path/to/bgenix
