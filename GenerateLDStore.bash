@@ -47,6 +47,7 @@ while getopts :-: OPT; do
 	plinkpath )    needs_arg; plinkpath="$OPTARG" ;;
 	bgenixpath )    needs_arg; bgenixpath="$OPTARG" ;;
 	qctoolpath )    needs_arg; qctoolpath="$OPTARG" ;;
+	nocleanup )    needs_arg; nocleanup="$OPTARG" ;;	
 	??* )          die "Illegal option --$OPT" ;;  # bad long option
 	? )            exit 2 ;;  # bad short option (error reported via getopts)
     esac
@@ -331,7 +332,10 @@ then
 
     # Remove snplist
 
-    rm ${output}_chr${chromosome}_${start}_${end}.snplist
+    if [ -z ${nocleanup+x} ]
+    then
+        rm ${output}_chr${chromosome}_${start}_${end}.snplist
+    fi
 
 else
     
@@ -468,8 +472,10 @@ else
 
     ## Clean up temporary bgen
 
-    rm ${output}_chr${chromosome}_${start}_${end}_TEMP.bgen
-
+    if [ -z ${nocleanup+x} ]
+    then
+        rm ${output}_chr${chromosome}_${start}_${end}_TEMP.bgen
+    fi
     
     ## Write Z files
 
@@ -478,8 +484,11 @@ else
 	    > ${output}_chr${chromosome}_${start}_${end}.z
 
     ## Clean up extra files
-
-    rm ${output}_chr${chromosome}_${start}_${end}.remap ${output}_chr${chromosome}_${start}_${end}.incl.snps
+    
+    if [ -z ${nocleanup+x} ]
+    then
+        rm ${output}_chr${chromosome}_${start}_${end}.remap ${output}_chr${chromosome}_${start}_${end}.incl.snps
+    fi
 
 fi
 
@@ -519,5 +528,7 @@ $ldstorepath/ldstore_v2.0_x86_64 \
 
 ## Clean up
 
-rm $masterroot.master ${masterroot}.z ${masterroot}.bgen ${masterroot}.bgen.bgi 
-
+if [ -z ${nocleanup+x} ]
+then
+    rm $masterroot.master ${masterroot}.z ${masterroot}.bgen ${masterroot}.bgen.bgi
+fi
