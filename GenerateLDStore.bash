@@ -47,7 +47,7 @@ while getopts :-: OPT; do
 	plinkpath )    needs_arg; plinkpath="$OPTARG" ;;
 	bgenixpath )    needs_arg; bgenixpath="$OPTARG" ;;
 	qctoolpath )    needs_arg; qctoolpath="$OPTARG" ;;
-	nocleanup )    needs_arg; nocleanup="$OPTARG" ;;	
+	nocleanup )    nocleanup="$OPTARG" ;;	
 	??* )          die "Illegal option --$OPT" ;;  # bad long option
 	? )            exit 2 ;;  # bad short option (error reported via getopts)
     esac
@@ -272,6 +272,7 @@ then
             --out ${output}_chr${chromosome}_${start}_${end} \
 	    --chr $chromosome \
 	    --extract bed1 <(echo $chromosome $start $end) \
+	    --mac 1 \
     	    --write-snplist
 
     elif [ -z ${keep+x} ]
@@ -288,6 +289,7 @@ then
 	    --out ${output}_chr${chromosome}_${start}_${end} \
 	    --chr $chromosome \
 	    --extract $extract \
+	    --mac 1 \
 	    --write-snplist
 	
     elif [ -z ${extract+x} ]
@@ -305,6 +307,7 @@ then
 	    --chr $chromosome \
 	    --keep $keep \
 	    --extract bed1 <(echo $chromosome $start $end) \
+	    --mac 1 \
     	    --write-snplist
 
     else
@@ -321,6 +324,7 @@ then
 	    --chr $chromosome \
 	    --keep $keep \
 	    --extract $extract \
+	    --mac 1 \
 	    --write-snplist
     fi
 
@@ -364,6 +368,7 @@ else
             --threads $threads \
             --out $output \
 	    --chr $chromosome \
+	    --mac 1 \
 	    --extract bed1 <(echo $chromosome $start $end)
 
 	# Convert sample format to qctoolv2 version
