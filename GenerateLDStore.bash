@@ -518,8 +518,13 @@ then
     cat <(echo "z;bgen;bgi;bcor;ld;n_samples;sample") \
 	<(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;$inputsample") >  $masterroot.master
 else
+
+    ## Keep file needs a .incl extension for use here
+
+    cp $keep keepsamples.incl
+
     cat <(echo "z;bgen;bgi;bcor;ld;n_samples;sample;incl") \
-	<(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;$inputsample;$keep") >  $masterroot.master
+	<(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;$inputsample;keepsamples.incl") >  $masterroot.master
 fi
 
 ## Write bcor
@@ -535,5 +540,5 @@ $ldstorepath/ldstore_v2.0_x86_64 \
 
 if [ -z ${nocleanup+x} ]
 then
-    rm $masterroot.master ${masterroot}.z ${masterroot}.bgen ${masterroot}.bgen.bgi
+    rm $masterroot.master ${masterroot}.z ${masterroot}.bgen ${masterroot}.bgen.bgi keepsamples.incl
 fi
