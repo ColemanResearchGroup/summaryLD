@@ -16,7 +16,7 @@ Support for additional input files can be requested - at present, only PLINK bin
 When using PLINK binary input, the pipeline requires [PLINK2](https://www.cog-genomics.org/plink/2.0).
 When using bgen1.2 input, the pipeline requires [qctool2](https://www.well.ox.ac.uk/~gav/qctool/).
 
-This code was developed in a Linux environment (4.19.0-19-amd64) - it should run in other POSIX environments, but has not as yet been widely tested.
+This code was developed in a Linux environment (4.19.0-19-amd64) - it should run in other POSIX environments, but has not as yet been widely tested. LDStore2 requires glibc >= 2.17.
 
 ## Installation
 
