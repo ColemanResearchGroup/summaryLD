@@ -468,10 +468,10 @@ else
 
     if [ -z ${keep+x} ]
     then
-	qctoolcommand=$(echo $qctoolcommand " -og " ${output}_chr${chromosome}_${start}_${end}.bgen)
+	qctoolcommand=$(echo $qctoolcommand " -og " ${output}_chr${chromosome}_${start}_${end}.bgen " -os " ${output}_chr${chromosome}_${start}_${end}.sample)
 	$qctoolcommand
     else
-	qctoolcommand=$(echo $qctoolcommand " -incl-samples " $keep " -og " ${output}_chr${chromosome}_${start}_${end}.bgen)
+	qctoolcommand=$(echo $qctoolcommand " -incl-samples " $keep " -og " ${output}_chr${chromosome}_${start}_${end}.bgen " -os " ${output}_chr${chromosome}_${start}_${end}.sample)
 	$qctoolcommand
     fi
 
