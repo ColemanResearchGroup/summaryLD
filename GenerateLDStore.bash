@@ -516,7 +516,7 @@ masterroot=$(echo ${output}"_chr"${chromosome}"_"${start}"_"${end})
 if [ -z ${keep+x} ]
 then
     cat <(echo "z;bgen;bgi;bcor;ld;n_samples;sample") \
-	<(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;$inputsample") >  $masterroot.master
+	<(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;${masterroot}.sample") >  $masterroot.master
 else
 
     ## Keep file needs a .incl extension for use here
@@ -524,7 +524,7 @@ else
     cp $keep keepsamples.incl
 
     cat <(echo "z;bgen;bgi;bcor;ld;n_samples;sample;incl") \
-	<(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;$inputsample;keepsamples.incl") >  $masterroot.master
+	<(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;${masterroot}.sample;keepsamples.incl") >  $masterroot.master
 fi
 
 ## Write bcor
