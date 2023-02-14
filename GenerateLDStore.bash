@@ -338,7 +338,7 @@ then
 
     if [ -z ${nocleanup+x} ]
     then
-        rm ${output}_chr${chromosome}_${start}_${end}.snplist
+        rm -f ${output}_chr${chromosome}_${start}_${end}.snplist
     fi
 
 else
@@ -479,7 +479,7 @@ else
 
     if [ -z ${nocleanup+x} ]
     then
-        rm ${output}_chr${chromosome}_${start}_${end}_TEMP.bgen
+        rm -f ${output}_chr${chromosome}_${start}_${end}_TEMP.bgen
     fi
     
     ## Write Z files
@@ -492,7 +492,7 @@ else
     
     if [ -z ${nocleanup+x} ]
     then
-        rm ${output}_chr${chromosome}_${start}_${end}.remap ${output}_chr${chromosome}_${start}_${end}.incl.snps
+        rm -f ${output}_chr${chromosome}_${start}_${end}.remap ${output}_chr${chromosome}_${start}_${end}.incl.snps
     fi
 
 fi
@@ -540,5 +540,5 @@ $ldstorepath/ldstore_v2.0_x86_64 \
 
 if [ -z ${nocleanup+x} ]
 then
-    rm $masterroot.master ${masterroot}.z ${masterroot}.bgen ${masterroot}.bgen.bgi keepsamples.incl
+    rm -f $masterroot.master ${masterroot}.z ${masterroot}.bgen ${masterroot}.bgen.bgi keepsamples.incl
 fi
