@@ -347,7 +347,7 @@ then
 
     if [ -z ${nocleanup+x} ]
     then
-        rm ${output}_chr${chromosome}_${start}_${end}.snplist
+        rm -f ${output}_chr${chromosome}_${start}_${end}.snplist
     fi
 
 else
@@ -485,10 +485,10 @@ else
 
     if [ -z ${keep+x} ]
     then
-	qctoolcommand=$(echo $qctoolcommand " -og " ${output}_chr${chromosome}_${start}_${end}.bgen)
+	qctoolcommand=$(echo $qctoolcommand " -og " ${output}_chr${chromosome}_${start}_${end}.bgen " -os " ${output}_chr${chromosome}_${start}_${end}.sample)
 	$qctoolcommand
     else
-	qctoolcommand=$(echo $qctoolcommand " -incl-samples " $keep " -og " ${output}_chr${chromosome}_${start}_${end}.bgen)
+	qctoolcommand=$(echo $qctoolcommand " -incl-samples " $keep " -og " ${output}_chr${chromosome}_${start}_${end}.bgen " -os " ${output}_chr${chromosome}_${start}_${end}.sample)
 	$qctoolcommand
     fi
 
@@ -496,7 +496,7 @@ else
 
     if [ -z ${nocleanup+x} ]
     then
-        rm ${output}_chr${chromosome}_${start}_${end}_TEMP.bgen
+        rm -f ${output}_chr${chromosome}_${start}_${end}_TEMP.bgen
     fi
     
     ## Write Z files
@@ -509,7 +509,7 @@ else
     
     if [ -z ${nocleanup+x} ]
     then
-        rm ${output}_chr${chromosome}_${start}_${end}.remap ${output}_chr${chromosome}_${start}_${end}.incl.snps
+        rm -f ${output}_chr${chromosome}_${start}_${end}.remap ${output}_chr${chromosome}_${start}_${end}.incl.snps
     fi
 
 fi
@@ -533,10 +533,15 @@ masterroot=$(echo ${output}"_chr"${chromosome}"_"${start}"_"${end})
 if [ -z ${keep+x} ]
 then
     cat <(echo "z;bgen;bgi;bcor;ld;n_samples;sample") \
-	<(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;$inputsample") >  $masterroot.master
+	<(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;${masterroot}.sample") >  $masterroot.master
 else
+
+    ## Keep file needs a .incl extension for use here
+
+    cp $keep keepsamples.incl
+
     cat <(echo "z;bgen;bgi;bcor;ld;n_samples;sample;incl") \
-	<(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;$inputsample;$keep") >  $masterroot.master
+	<(echo -e "${masterroot}.z;${masterroot}.bgen;${masterroot}.bgen.bgi;${masterroot}.bcor;${masterroot}.ld;$samplen;${masterroot}.sample;keepsamples.incl") >  $masterroot.master
 fi
 
 ## Write bcor
@@ -552,5 +557,5 @@ $ldstorepath/ldstore_v2.0_x86_64 \
 
 if [ -z ${nocleanup+x} ]
 then
-    rm $masterroot.master ${masterroot}.z ${masterroot}.bgen ${masterroot}.bgen.bgi
+    rm -f $masterroot.master ${masterroot}.z ${masterroot}.bgen ${masterroot}.bgen.bgi keepsamples.incl
 fi
