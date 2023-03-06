@@ -1,7 +1,7 @@
 ### Script: Generate LDStore LD Matrix files
 ### Date: 2022-03-25
 ### Authors: JRIColeman
-### Version: 0.2.2022.06.27
+### Version: 0.3.2023.03.06
 
 #####################################################################################
 #####################################################################################
@@ -47,7 +47,8 @@ while getopts :-: OPT; do
 	plinkpath )    needs_arg; plinkpath="$OPTARG" ;;
 	bgenixpath )    needs_arg; bgenixpath="$OPTARG" ;;
 	qctoolpath )    needs_arg; qctoolpath="$OPTARG" ;;
-	nocleanup )    nocleanup="$OPTARG" ;;	
+	nocleanup )    nocleanup="$OPTARG" ;;
+	ukbb )    ukbb="$OPTARG" ;;	
 	??* )          die "Illegal option --$OPT" ;;  # bad long option
 	? )            exit 2 ;;  # bad short option (error reported via getopts)
     esac
@@ -83,6 +84,11 @@ Note the '--' flags and the necessity for arguments to be attached to flags with
         - OPTIONAL
 	- As --input above, but separate files
 	- NOTE: the sample file needs to be the qctoolv2 version format (https://www.well.ox.ac.uk/~gav/qctool_v2/documentation/sample_file_formats.html)
+    --ukbb
+        - OPTIONAL
+        - BGen files from the UK Biobank are formatted differently, with chromosome codes like 01-09 instead of 1-9
+        - If the bgen file being used is from UK Biobank, use this flag to address this (include as '--ukbb' without the quotes)
+        - If using PLINK, or if the bgen file being used is NOT from UK Biobank, do not include this flag
     --chromosome
         - MANDATORY
         - Chromosome of the region to be included in the LD matrix
@@ -135,6 +141,9 @@ Note the '--' flags and the necessity for arguments to be attached to flags with
     --qctoolpath
 	- plink NOT REQUIRED // plinkbgen MANDATORY // bgen MANDATORY
         - Full path to qctool2 binary (not including program itself).
+    --nocleanup
+        - OPTIONAL
+        - Do not remove temporary files (only useful for debugging)
 "
     exit
 fi
@@ -377,9 +386,9 @@ else
 	    <(echo "ID missing sex PHENO1") \
 	    <(echo "0 0 D B") \
 	    <(awk 'NR > 2 {print $1"_"$2, $3, $4, $5}' $output.sample) \
-	    > TEMP.sample
+	    > $output.TEMP.sample
 
-	mv TEMP.sample $output.sample
+	mv $output.TEMP.sample $output.sample
 
 	inputbgen=$output.bgen
 	inputbgi=$output.bgen.bgi
@@ -408,15 +417,23 @@ else
    
     ## Split data to segment for regions of interest and write Z files
 
-    # Give chromosome leading 0 for segment extraction
+    ## Set rangechromosome to be chromosome...
+    
+    rangechromosome=$chromosome
 
-    if [ $chromosome -lt 10 ]
+    ## ...unless this is a UKBB-like bgen, in which case give chromosome a leading 0 for segment extraction if chromosome < 10
+    ## Bash note: ":" means do nothing, but is a confusing command, hence this note.
+    
+    if [ -z ${ukbb+x} ] 
     then
-	rangechromosome=$(echo "0"$chromosome)
+	:
     else
-	rangechromosome=$chromosome
+	if [ $chromosome -lt 10 ]
+	then
+	    rangechromosome=$(echo "0"$chromosome)
+	fi
     fi
-
+    
     # Split to segment
 
     echo -e "\nSplitting to "$chromosome":"$start"-"$end
