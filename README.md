@@ -100,7 +100,7 @@ GenerateLDStore.bash \
 --plinkpath=/path/to/plink \
 --bgenixpath /path/to/bgenix
 
-# For BGen1.2 input - Input.{bgen,bgi,sample}
+# For BGen1.2 input - Input.{bgen,bgi,sample} from PLINK
 # Other options as above
 
 bash \
@@ -118,6 +118,28 @@ GenerateLDStore.bash \
 --ldstorepath=path/to/ldstore \
 --bgenixpath /path/to/bgenix \
 --qctoolpath /path/to/qctool
+
+# For BGen1.2 input - Input.{bgen,bgi,sample} from UKBB
+# Other options as above
+
+bash \
+GenerateLDStore.bash \
+--input=Input \
+--chromosome=1 \
+--start=1 \
+--end=3000001 \
+--extract=SNPs.txt \
+--keep=Indivs.txt \
+--samplen=10000 \
+--threads=2 \
+--output=OutputName \
+--inputtype=bgen \
+--ldstorepath=path/to/ldstore \
+--bgenixpath /path/to/bgenix \
+--qctoolpath /path/to/qctool \
+--ukbb
+
+# If your BGen output makes an empty bcor without the --ukbb flag, try including it.
 
 ```
 
@@ -143,6 +165,11 @@ Note the '--' flags and the necessity for arguments to be attached to flags with
         - OPTIONAL
 	- As --input above, but separate files
 	- NOTE: the sample file needs to be the qctoolv2 version format (https://www.well.ox.ac.uk/~gav/qctool_v2/documentation/sample_file_formats.html)
+    --ukbb
+        - OPTIONAL
+        - BGen files from the UK Biobank are formatted differently, with chromosome codes like 01-09 instead of 1-9
+        - If the bgen file being used is from UK Biobank, use this flag to address this (include as '--ukbb' without the quotes)
+        - If using PLINK, or if the bgen file being used is NOT from UK Biobank, do not include this flag
     --chromosome
         - MANDATORY
         - Chromosome of the region to be included in the LD matrix
