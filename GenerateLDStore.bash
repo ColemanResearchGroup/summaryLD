@@ -1,7 +1,7 @@
 ### Script: Generate LDStore LD Matrix files
 ### Date: 2022-03-25
 ### Authors: JRIColeman
-### Version: 0.3.2023.03.06
+### Version: 1.0.2023.03.23
 
 #####################################################################################
 #####################################################################################
@@ -288,6 +288,25 @@ then
     then
 
 	echo -e "\nConvert to bgen and filter to extract list\n"
+
+	## Extract SNPs in region of interest
+
+	$plinkpath/plink2 \
+            --bed $inputbed \
+            --bim $inputbim \
+            --fam $inputfam \
+            --threads $threads \
+            --out ${output}_chr${chromosome}_${start}_${end}_TEMP \
+	    --chr $chromosome \
+	    --extract bed1 <(echo $chromosome $start $end) \
+	    --mac 1 \
+    	    --write-snplist
+
+	## Filter to extract list
+
+	LANG=C fgrep -wf $extract ${output}_chr${chromosome}_${start}_${end}_TEMP.snplist > ${output}_chr${chromosome}_${start}_${end}_EXTRACT.snplist
+
+	## Generate bgen
 	
 	$plinkpath/plink2 \
 	    --bed $inputbed \
@@ -297,9 +316,16 @@ then
 	    --threads $threads \
 	    --out ${output}_chr${chromosome}_${start}_${end} \
 	    --chr $chromosome \
-	    --extract $extract \
+	    --extract ${output}_chr${chromosome}_${start}_${end}_EXTRACT.snplist \
 	    --mac 1 \
 	    --write-snplist
+
+	## Clean up temporary files
+
+        if [ -z ${nocleanup+x} ]
+        then
+            rm -f ${output}_chr${chromosome}_${start}_${end}_TEMP.snplist ${output}_chr${chromosome}_${start}_${end}_EXTRACT.snplist
+        fi
 	
     elif [ -z ${extract+x} ]
     then
@@ -323,6 +349,26 @@ then
 
 	echo -e "\nConvert to bgen, filter to extract list, keep only keep individuals\n"
 	
+        ## Extract SNPs in region of interest
+	
+	$plinkpath/plink2 \
+	    --bed $inputbed \
+	    --bim $inputbim \
+	    --fam $inputfam \
+	    --threads $threads \
+	    --out ${output}_chr${chromosome}_${start}_${end}_TEMP \
+	    --chr $chromosome \
+	    --keep $keep \
+	    --extract bed1 <(echo $chromosome $start $end) \
+	    --mac 1 \
+	    --write-snplist
+	
+	## Filter to extract list
+
+	LANG=C fgrep -wf $extract ${output}_chr${chromosome}_${start}_${end}_TEMP.snplist > ${output}_chr${chromosome}_${start}_${end}_EXTRACT.snplist
+
+	## Generate bgen
+	
 	$plinkpath/plink2 \
 	    --bed $inputbed \
 	    --bim $inputbim \
@@ -332,9 +378,16 @@ then
 	    --out ${output}_chr${chromosome}_${start}_${end} \
 	    --chr $chromosome \
 	    --keep $keep \
-	    --extract $extract \
+	    --extract ${output}_chr${chromosome}_${start}_${end}_EXTRACT.snplist \
 	    --mac 1 \
 	    --write-snplist
+
+	## Clean up temporary files
+
+        if [ -z ${nocleanup+x} ]
+        then
+            rm -f ${output}_chr${chromosome}_${start}_${end}_TEMP.snplist ${output}_chr${chromosome}_${start}_${end}_EXTRACT.snplist
+        fi
     fi
 
     ## Write Z files for LDStore
