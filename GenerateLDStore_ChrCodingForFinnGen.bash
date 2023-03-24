@@ -1,7 +1,7 @@
 ### Script: Generate LDStore LD Matrix files
 ### Date: 2022-03-25
 ### Authors: JRIColeman
-### Version: 0.3.2023.03.06
+### Version: 1.0.2023.03.23.fngnr5
 
 #####################################################################################
 #####################################################################################
@@ -288,18 +288,39 @@ then
     then
 
 	echo -e "\nConvert to bgen and filter to extract list\n"
+
+	## Extract SNPs in region of interest
+
+	$plinkpath/plink2 \
+            --bed $inputbed \
+            --bim $inputbim \
+            --fam $inputfam \
+            --threads $threads \
+            --out ${output}_chr${chromosome}_${start}_${end}_TEMP \
+	    --chr $chromosome \
+	    --extract bed1 <(echo $chromosome $start $end) \
+	    --mac 1 \
+    	    --make-pgen
+
+	## Generate bgen
 	
 	$plinkpath/plink2 \
-	    --bed $inputbed \
-	    --bim $inputbim \
-	    --fam $inputfam \
+	    --pfile ${output}_chr${chromosome}_${start}_${end}_TEMP \
 	    --export bgen-1.2 \
 	    --threads $threads \
 	    --out ${output}_chr${chromosome}_${start}_${end} \
-	    --chr $chromosome \
 	    --extract $extract \
-	    --mac 1 \
 	    --write-snplist
+	
+	## Clean up temporary files
+
+        if [ -z ${nocleanup+x} ]
+        then
+            rm -f ${output}_chr${chromosome}_${start}_${end}_TEMP.log \
+	       ${output}_chr${chromosome}_${start}_${end}_TEMP.pgen \
+	       ${output}_chr${chromosome}_${start}_${end}_TEMP.psam \
+	       ${output}_chr${chromosome}_${start}_${end}_TEMP.pvar
+        fi
 	
     elif [ -z ${extract+x} ]
     then
@@ -322,19 +343,40 @@ then
     else
 
 	echo -e "\nConvert to bgen, filter to extract list, keep only keep individuals\n"
+
+        ## Extract SNPs in region of interest
 	
 	$plinkpath/plink2 \
 	    --bed $inputbed \
 	    --bim $inputbim \
 	    --fam $inputfam \
+	    --threads $threads \
+	    --out ${output}_chr${chromosome}_${start}_${end}_TEMP \
+	    --chr $chromosome \
+	    --keep $keep \
+	    --extract bed1 <(echo $chromosome $start $end) \
+	    --mac 1 \
+    	    --make-pgen
+
+	## Generate bgen
+	
+	$plinkpath/plink2 \
+	    --pfile ${output}_chr${chromosome}_${start}_${end}_TEMP \
 	    --export bgen-1.2 \
 	    --threads $threads \
 	    --out ${output}_chr${chromosome}_${start}_${end} \
-	    --chr $chromosome \
-	    --keep $keep \
 	    --extract $extract \
-	    --mac 1 \
 	    --write-snplist
+	
+	## Clean up temporary files
+
+        if [ -z ${nocleanup+x} ]
+        then
+            rm -f ${output}_chr${chromosome}_${start}_${end}_TEMP.log \
+	       ${output}_chr${chromosome}_${start}_${end}_TEMP.pgen \
+	       ${output}_chr${chromosome}_${start}_${end}_TEMP.psam \
+	       ${output}_chr${chromosome}_${start}_${end}_TEMP.pvar
+        fi
     fi
 
     ## Write Z files for LDStore
@@ -418,11 +460,15 @@ else
     ## Split data to segment for regions of interest and write Z files
 
     ## Set rangechromosome to be chromosome...
+
+    ## For FinnGen R5, this is going to be chr1 type format
     
     rangechromosome=$chromosome
 
     ## ...unless this is a UKBB-like bgen, in which case give chromosome a leading 0 for segment extraction if chromosome < 10
     ## Bash note: ":" means do nothing, but is a confusing command, hence this note.
+
+    ## FinnGen R5 is run without --ukbb, so it should not be changed by the code below
     
     if [ -z ${ukbb+x} ] 
     then
